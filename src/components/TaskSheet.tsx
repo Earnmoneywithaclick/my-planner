@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { COLORS, db, newId, type Task } from '../db'
-import { Button, CheckCircle, Chip, PRIORITY_LABEL, Segmented, Select, Sheet, TextArea, TextInput } from './ui'
+import { Button, CheckCircle, PRIORITY_LABEL, Segmented, Select, Sheet, TextArea, TextInput } from './ui'
 import { todayKey, shiftKey } from '../lib/date'
 
 export function TaskSheet({ initial, onClose }: { initial: Partial<Task>; onClose: () => void }) {
@@ -106,7 +106,6 @@ export async function addTaskGroup(groupName: string, titles: string[]) {
 
 /** 할 일 여러 개를 한 묶음으로 한 번에 추가 */
 export function BulkTaskSheet({ onClose }: { onClose: () => void }) {
-  const goals = useLiveQuery(() => db.goals.where('status').notEqual('done').toArray(), [])
   const [group, setGroup] = useState('')
   const [text, setText] = useState('')
   const titles = splitLines(text)
@@ -128,17 +127,8 @@ export function BulkTaskSheet({ onClose }: { onClose: () => void }) {
         </Button>
       }
     >
-      <TextInput autoFocus placeholder="묶음 이름 (예: 한국 가면 할 일)" value={group} onChange={(e) => setGroup(e.target.value)} />
-      {!!goals?.length && (
-        <div className="flex gap-2 flex-wrap">
-          {goals.map((g) => (
-            <Chip key={g.id} active={group === g.title} onClick={() => setGroup(group === g.title ? '' : g.title)}>
-              {g.title}
-            </Chip>
-          ))}
-        </div>
-      )}
-      <TextArea rows={10} placeholder={'한 줄에 하나씩\n예)\n여권 갱신\n미용실'}value={text} onChange={(e) => setText(e.target.value)} />
+      <TextInput autoFocus placeholder="묶음 이름" value={group} onChange={(e) => setGroup(e.target.value)} />
+      <TextArea rows={10} placeholder="한 줄에 하나씩" value={text} onChange={(e) => setText(e.target.value)} />
     </Sheet>
   )
 }
