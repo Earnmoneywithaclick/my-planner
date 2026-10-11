@@ -9,6 +9,7 @@ import { CategoryLegend } from './Categories'
 
 const MAX_PER_DAY = 6
 const DOUBLE_TAP_MS = 400
+const LEAVE_MS = 170
 
 type CalItem = { key: string; title: string; color: string; start?: string; repeat: boolean }
 
@@ -25,7 +26,9 @@ export function MonthCalendar({ today, selected, onSelect, onAdd }: { today: str
   for (let d = gridStart; d <= gridEnd; d = addDays(d, 1)) days.push(toKey(d))
   const monthKey = toKey(month).slice(0, 7)
   const lastTap = useRef<{ day: string; at: number } | null>(null)
-  const touch = useRef<{ x: number; y: number } | null>(null)
+  const gridRef = useRef<HTMLDivElement>(null)
+  const drag = useRef<{ x: number; y: number; dx: number; at: number; horizontal: boolean | null } | null>(null)
+  const leaving = useRef(false)
 
   // 달이 바뀐 방향(다음 달 → 오른쪽에서, 이전 달 → 왼쪽에서)으로 살짝 밀려 들어오게 한다.
   // 일정을 다시 읽어 와 다시 그려져도 애니메이션이 끊기지 않도록 방향을 state 로 들고 있는다.
@@ -66,16 +69,63 @@ export function MonthCalendar({ today, selected, onSelect, onAdd }: { today: str
   // 다른 달로 넘길 때는 같은 날짜(없으면 그 달 마지막 날)를 고른다
   const moveMonth = (n: number) => onSelect(toKey(addMonths(fromKey(selected), n)))
 
+  /** 지금 달을 옆으로 살짝 밀어 내보낸 뒤 달을 바꾼다 (새 달은 반대쪽에서 미끄러져 들어온다) */
+  function goMonth(n: number) {
+    const el = gridRef.current
+    if (leaving.current) return
+    if (!el || matchMedia('(prefers-reduced-motion: reduce)').matches) return moveMonth(n)
+    leaving.current = true
+    el.style.transition = `transform ${LEAVE_MS}ms cubic-bezier(0.4, 0, 1, 1), opacity ${LEAVE_MS}ms ease-in`
+    el.style.transform = `translateX(${n > 0 ? -35 : 35}%)`
+    el.style.opacity = '0'
+    setTimeout(() => {
+      leaving.current = false
+      moveMonth(n)
+    }, LEAVE_MS - 10)
+  }
+
+  // 손가락을 따라 달력이 움직이고, 놓으면 넘어가거나 제자리로 돌아온다
+  function onTouchStart(e: React.TouchEvent) {
+    const t = e.touches[0]
+    drag.current = { x: t.clientX, y: t.clientY, dx: 0, at: Date.now(), horizontal: null }
+    if (gridRef.current) gridRef.current.style.transition = 'none'
+  }
+  function onTouchMove(e: React.TouchEvent) {
+    const d = drag.current
+    const el = gridRef.current
+    if (!d || !el || leaving.current) return
+    const dx = e.touches[0].clientX - d.x
+    const dy = e.touches[0].clientY - d.y
+    if (d.horizontal === null && Math.hypot(dx, dy) > 8) d.horizontal = Math.abs(dx) > Math.abs(dy)
+    if (!d.horizontal) return
+    d.dx = dx
+    el.style.transform = `translateX(${dx}px)`
+    el.style.opacity = String(1 - Math.min(Math.abs(dx) / el.offsetWidth, 1) * 0.6)
+  }
+  function onTouchEnd() {
+    const d = drag.current
+    const el = gridRef.current
+    drag.current = null
+    if (!d?.horizontal || !el) return
+    const speed = Math.abs(d.dx) / Math.max(Date.now() - d.at, 1) // px/ms
+    if (Math.abs(d.dx) > el.offsetWidth * 0.18 || (speed > 0.45 && Math.abs(d.dx) > 24)) goMonth(d.dx < 0 ? 1 : -1)
+    else {
+      el.style.transition = 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease-out'
+      el.style.transform = ''
+      el.style.opacity = ''
+    }
+  }
+
   return (
     <Card className="span-all !px-1 md:!px-2 !py-3">
       <div className="flex items-center justify-between px-1 mb-1">
-        <IconButton label="이전 달" onClick={() => moveMonth(-1)}>
+        <IconButton label="이전 달" onClick={() => goMonth(-1)}>
           <ChevronLeft />
         </IconButton>
         <button type="button" onClick={() => onSelect(today)} className="text-[17px] font-bold h-11 px-2">
           {fmt(toKey(month), 'yyyy년 M월')}
         </button>
-        <IconButton label="다음 달" onClick={() => moveMonth(1)}>
+        <IconButton label="다음 달" onClick={() => goMonth(1)}>
           <ChevronRight />
         </IconButton>
       </div>
@@ -86,20 +136,9 @@ export function MonthCalendar({ today, selected, onSelect, onAdd }: { today: str
           </span>
         ))}
       </div>
-      {/* 좌우로 밀어서 달 넘기기 */}
-      <div
-        className="overflow-hidden"
-        onTouchStart={(e) => (touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY })}
-        onTouchEnd={(e) => {
-          const start = touch.current
-          touch.current = null
-          if (!start) return
-          const dx = e.changedTouches[0].clientX - start.x
-          const dy = e.changedTouches[0].clientY - start.y
-          if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) moveMonth(dx < 0 ? 1 : -1)
-        }}
-      >
-      <div key={monthKey} className={`grid grid-cols-7 ${slide}`}>
+      {/* 좌우로 밀어서 달 넘기기 (세로 스크롤은 그대로) */}
+      <div className="overflow-hidden touch-pan-y" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} onTouchCancel={onTouchEnd}>
+      <div ref={gridRef} key={monthKey} className={`grid grid-cols-7 will-change-transform ${slide}`}>
         {days.map((d) => {
           const inMonth = d.startsWith(monthKey)
           const isSel = d === selected

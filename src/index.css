@@ -102,7 +102,7 @@ input[type='time'] {
 @keyframes month-next {
   from {
     opacity: 0;
-    transform: translateX(32px);
+    transform: translateX(35%);
   }
   to {
     opacity: 1;
@@ -112,18 +112,19 @@ input[type='time'] {
 @keyframes month-prev {
   from {
     opacity: 0;
-    transform: translateX(-32px);
+    transform: translateX(-35%);
   }
   to {
     opacity: 1;
     transform: none;
   }
 }
+/* 천천히 감속하며 멈추는 곡선 (easeOutQuint) */
 .animate-month-next {
-  animation: month-next 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: month-next 0.42s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .animate-month-prev {
-  animation: month-prev 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: month-prev 0.42s cubic-bezier(0.22, 1, 0.36, 1);
 }
 @media (prefers-reduced-motion: reduce) {
   .animate-month-next,
