@@ -44,6 +44,7 @@ export interface PlanEvent {
 export interface TimetableBlock {
   id: string
   weekday: number // 0=일 … 6=토
+  seriesId?: string // 함께 만든 반복 일정(여러 요일)을 묶는 id — 한 번에 고치고 지운다
   start: string
   end?: string // 없으면 시작 시간만 표시
   title: string

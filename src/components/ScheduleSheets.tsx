@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useLiveQuery } from 'dexie-react-hooks'
 import { COLORS, db, newId, type PlanEvent, type TimetableBlock } from '../db'
 import { TIME_SLOTS, WEEKDAYS, WEEK_ORDER, timeLabel } from '../lib/date'
 import { Button, Select, Sheet, TextArea, TextInput } from './ui'
@@ -69,34 +70,66 @@ function Footer({ isNew, valid, onSave, onRemove }: { isNew: boolean; valid: boo
   )
 }
 
-/** 요일마다 반복되는 시간표 칸 */
+/** 같은 반복 일정에 속한 요일들인지. 예전 기록(seriesId 없음)은 이름·시간·장소·카테고리가 모두 같으면 한 묶음으로 본다. */
+function sameSeries(a: TimetableBlock, b: TimetableBlock) {
+  if (a.seriesId || b.seriesId) return a.seriesId === b.seriesId
+  return a.title === b.title && a.start === b.start && (a.end ?? '') === (b.end ?? '') && a.color === b.color && (a.place ?? '') === (b.place ?? '')
+}
+
+/** 요일마다 반복되는 시간표. 고치거나 지우면 같은 반복 일정의 모든 요일에 한 번에 적용된다. */
 export function BlockSheet({ initial, onClose }: { initial: Partial<TimetableBlock>; onClose: () => void }) {
   const [b, setB] = useState<Partial<TimetableBlock>>({ color: COLORS[4], start: '09:00', ...initial })
   const isNew = b.id == null
-  const [days, setDays] = useState<number[]>(initial.weekday != null ? [initial.weekday] : [1])
+  const siblings = useLiveQuery(async () => {
+    if (initial.id == null) return []
+    const all = await db.timetable.toArray()
+    const me = all.find((x) => x.id === initial.id)
+    return me ? all.filter((x) => sameSeries(x, me)) : []
+  }, [initial.id])
+  // 사용자가 요일을 건드리기 전까지는 같은 반복 일정의 요일들을 그대로 보여준다
+  const [pickedDays, setPickedDays] = useState<number[] | null>(isNew ? [initial.weekday ?? 1] : null)
+  const days = pickedDays ?? [...new Set(siblings?.map((x) => x.weekday) ?? (initial.weekday != null ? [initial.weekday] : []))]
   const set = (patch: Partial<TimetableBlock>) => setB((p) => ({ ...p, ...patch }))
-  const valid = !!b.title?.trim() && !!b.start && days.length > 0
+  const valid = !!b.title?.trim() && !!b.start && days.length > 0 && (isNew || siblings !== undefined)
 
   async function save() {
     if (!valid) return
-    const base = { title: b.title!.trim(), place: b.place?.trim() || undefined, start: b.start!, end: b.end || undefined, color: b.color! }
-    if (isNew) await db.timetable.bulkAdd(days.map((weekday) => ({ ...base, weekday, id: newId() })))
-    else await db.timetable.update(b.id!, { ...base, weekday: days[0] })
+    const seriesId = siblings?.find((x) => x.seriesId)?.seriesId ?? newId()
+    const base = { title: b.title!.trim(), place: b.place?.trim() || undefined, start: b.start!, end: b.end || undefined, color: b.color!, seriesId }
+    await db.transaction('rw', db.timetable, async () => {
+      // 요일마다 하나씩만 남기고 고친다. 빠진 요일은 지우고, 새로 고른 요일은 추가한다.
+      const keep = new Map<number, TimetableBlock>()
+      for (const s of siblings ?? []) {
+        if (days.includes(s.weekday) && !keep.has(s.weekday)) keep.set(s.weekday, s)
+        else await db.timetable.delete(s.id)
+      }
+      for (const weekday of days) {
+        const s = keep.get(weekday)
+        if (s) await db.timetable.update(s.id, { ...base, weekday })
+        else await db.timetable.add({ ...base, weekday, id: newId() })
+      }
+    })
     onClose()
   }
 
   async function remove() {
-    if (b.id != null && confirm('이 시간표 칸을 삭제할까요?')) {
-      await db.timetable.delete(b.id)
+    if (!siblings?.length) return
+    const names = WEEK_ORDER.filter((d) => siblings.some((x) => x.weekday === d)).map((d) => WEEKDAYS[d]).join('·')
+    if (confirm(`매주 ${names} 반복 일정을 모두 삭제할까요?`)) {
+      await db.timetable.bulkDelete(siblings.map((x) => x.id))
       onClose()
     }
   }
 
-  // 새로 만들 때는 여러 요일을 한 번에, 고칠 때는 한 요일만
-  const toggleDay = (d: number) => setDays((p) => (isNew ? (p.includes(d) ? p.filter((x) => x !== d) : [...p, d]) : [d]))
+  // 연달아 빠르게 눌러도 앞의 선택이 사라지지 않도록 직전 값을 기준으로 바꾼다
+  const toggleDay = (d: number) =>
+    setPickedDays((p) => {
+      const cur = p ?? days
+      return cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d]
+    })
 
   return (
-    <Sheet open title={isNew ? '시간표 추가' : '시간표 수정'} onClose={onClose} footer={<Footer isNew={isNew} valid={valid} onSave={save} onRemove={remove} />}>
+    <Sheet open title={isNew ? '반복 일정 추가' : '반복 일정 수정'} onClose={onClose} footer={<Footer isNew={isNew} valid={valid} onSave={save} onRemove={remove} />}>
       <TextInput autoFocus={isNew} placeholder="무엇을 하나요?" value={b.title ?? ''} onChange={(e) => set({ title: e.target.value })} />
       <WeekdayPicker days={days} onToggle={toggleDay} />
       <TimeRange start={b.start} end={b.end} onChange={set} />
