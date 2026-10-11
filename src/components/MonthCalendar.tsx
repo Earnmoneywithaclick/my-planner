@@ -20,8 +20,8 @@ type CalItem = { key: string; title: string; color: string; start?: string }
  */
 export function MonthCalendar({ today, selected, onSelect, onAdd }: { today: string; selected: string; onSelect: (k: string) => void; onAdd: (k: string) => void }) {
   const month = startOfMonth(fromKey(selected))
-  const gridStart = startOfWeek(month, { weekStartsOn: 1 })
-  const gridEnd = endOfWeek(endOfMonth(month), { weekStartsOn: 1 })
+  const gridStart = startOfWeek(month, { weekStartsOn: 0 })
+  const gridEnd = endOfWeek(endOfMonth(month), { weekStartsOn: 0 })
   const days: string[] = []
   for (let d = gridStart; d <= gridEnd; d = addDays(d, 1)) days.push(toKey(d))
   const monthKey = toKey(month).slice(0, 7)

@@ -2,8 +2,8 @@ import { addDays, format, parseISO } from 'date-fns'
 import { ko } from 'date-fns/locale'
 
 export const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
-/** 한 주를 월요일부터 보여줄 때의 요일 순서 */
-export const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0]
+/** 한 주를 보여줄 때의 요일 순서 (일요일부터) */
+export const WEEK_ORDER = [0, 1, 2, 3, 4, 5, 6]
 
 export const toKey = (d: Date) => format(d, 'yyyy-MM-dd')
 export const todayKey = () => toKey(new Date())
