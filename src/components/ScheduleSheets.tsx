@@ -4,6 +4,7 @@ import { COLORS, db, newId, type PlanEvent, type TimetableBlock } from '../db'
 import { TIME_SLOTS, WEEKDAYS, WEEK_ORDER, timeLabel } from '../lib/date'
 import { Button, Select, Sheet, TextArea, TextInput } from './ui'
 import { CategoryPicker } from './Categories'
+import { DateRangePicker } from './DateRangePicker'
 
 /** 30분 단위 시간 고르기. 예전에 저장한 다른 값이 있으면 그 값도 목록에 넣는다. */
 function TimeSelect({ value, onChange, emptyLabel, after, label }: { value?: string; onChange: (v?: string) => void; emptyLabel?: string; after?: string; label: string }) {
@@ -169,11 +170,8 @@ export function EventSheet({ initial, onClose }: { initial: Partial<PlanEvent>; 
   return (
     <Sheet open title={isNew ? '새 일정' : '일정 수정'} onClose={onClose} footer={<Footer isNew={isNew} valid={valid} onSave={save} onRemove={remove} />}>
       <TextInput autoFocus={isNew} placeholder="일정 이름" value={ev.title ?? ''} onChange={(e) => set({ title: e.target.value })} />
-      <div className="flex items-center gap-2">
-        <TextInput type="date" aria-label="시작 날짜" value={ev.date ?? ''} onChange={(e) => set({ date: e.target.value })} />
-        <span className="text-ink-3 text-[17px]">~</span>
-        <TextInput type="date" aria-label="마지막 날 (하루면 비워 두기)" min={ev.date} value={ev.endDate ?? ''} onChange={(e) => set({ endDate: e.target.value || undefined })} />
-      </div>
+      {/* 한 달력에서 시작 날 → 마지막 날 차례로 탭 */}
+      <DateRangePicker start={ev.date} end={ev.endDate} awaitEnd={isNew} onChange={({ date, endDate }) => set({ date, endDate })} />
       <TimeRange start={ev.start} end={ev.end} onChange={set} startEmptyLabel="하루 종일" />
       <TextArea placeholder="메모" value={ev.note ?? ''} onChange={(e) => set({ note: e.target.value })} />
       <CategoryPicker value={ev.color!} onChange={(color) => set({ color })} />
