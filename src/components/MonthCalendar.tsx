@@ -11,11 +11,11 @@ const MAX_PER_DAY = 6
 const DOUBLE_TAP_MS = 400
 const LEAVE_MS = 170
 
-type CalItem = { key: string; title: string; color: string; start?: string; repeat: boolean }
+type CalItem = { key: string; title: string; color: string; start?: string }
 
 /**
  * 한 달 달력. 날짜 칸마다 그날 일정을 카테고리 색 점으로만 보여주고, 아래에 색 → 카테고리 설명을 단다.
- * 날짜 일정은 꽉 찬 점, 매주 반복 시간표는 테두리만 있는 점.
+ * 매주 반복 시간표는 매번 찍히면 어지러워서 달력에는 넣지 않는다 (날짜를 고르면 아래 목록에는 나온다).
  * 한 번 탭하면 그 날짜 선택, 같은 날짜를 빠르게 두 번 탭하면 일정 추가.
  */
 export function MonthCalendar({ today, selected, onSelect, onAdd }: { today: string; selected: string; onSelect: (k: string) => void; onAdd: (k: string) => void }) {
@@ -41,19 +41,13 @@ export function MonthCalendar({ today, selected, onSelect, onAdd }: { today: str
   }, [monthKey])
 
   const data = useLiveQuery(async () => {
-    const [events, blocks] = await Promise.all([db.events.where('date').between(days[0], days[days.length - 1], true, true).toArray(), db.timetable.toArray()])
+    const events = await db.events.where('date').between(days[0], days[days.length - 1], true, true).toArray()
     const byDate = new Map<string, CalItem[]>()
-    for (const e of events) byDate.set(e.date, [...(byDate.get(e.date) ?? []), { key: e.id, title: e.title, color: e.color, start: e.start, repeat: false }])
-    const byWeekday = new Map<number, CalItem[]>()
-    for (const b of blocks) byWeekday.set(b.weekday, [...(byWeekday.get(b.weekday) ?? []), { key: b.id, title: b.title, color: b.color, start: b.start, repeat: true }])
-    return { byDate, byWeekday }
+    for (const e of events) byDate.set(e.date, [...(byDate.get(e.date) ?? []), { key: e.id, title: e.title, color: e.color, start: e.start }])
+    return byDate
   }, [days[0], days[days.length - 1]])
 
-  const itemsOf = (d: string) => {
-    const byTime = (a: CalItem, b: CalItem) => (a.start ?? '').localeCompare(b.start ?? '')
-    // 날짜에 잡은 일정이 먼저, 그다음 매주 반복 시간표
-    return [...(data?.byDate.get(d) ?? []).sort(byTime), ...(data?.byWeekday.get(fromKey(d).getDay()) ?? []).sort(byTime)]
-  }
+  const itemsOf = (d: string) => [...(data?.get(d) ?? [])].sort((a, b) => (a.start ?? '').localeCompare(b.start ?? ''))
 
   function tap(d: string) {
     const now = Date.now()
@@ -161,12 +155,7 @@ export function MonthCalendar({ today, selected, onSelect, onAdd }: { today: str
               {items.length > 0 && (
                 <span className="flex flex-wrap justify-center gap-[4px] px-1 pt-0.5">
                   {items.slice(0, MAX_PER_DAY).map((it) => (
-                    <span
-                      key={it.key}
-                      className="size-[9px] md:size-[11px] rounded-full"
-                      // 날짜 일정은 꽉 찬 점, 매주 반복 시간표는 테두리만 있는 점
-                      style={it.repeat ? { boxShadow: `inset 0 0 0 2px ${it.color}` } : { background: it.color }}
-                    />
+                    <span key={it.key} className="size-[9px] md:size-[11px] rounded-full" style={{ background: it.color }} />
                   ))}
                 </span>
               )}
