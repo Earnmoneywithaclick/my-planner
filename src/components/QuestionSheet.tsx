@@ -71,12 +71,11 @@ export function QuestionSheet({ initial, onClose }: { initial: Partial<Question>
     setAnswer('')
   }
 
+  // 묻지 않고 질문과 그 답을 함께 지운다
   async function remove() {
-    if (confirm('이 질문과 지금까지의 답을 모두 삭제할까요?')) {
-      await db.answers.where('questionId').equals(q.id!).delete()
-      await db.questions.delete(q.id!)
-      onClose()
-    }
+    await db.answers.where('questionId').equals(q.id!).delete()
+    await db.questions.delete(q.id!)
+    onClose()
   }
 
   if (editing) {

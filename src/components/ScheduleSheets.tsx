@@ -113,12 +113,10 @@ export function BlockSheet({ initial, onClose }: { initial: Partial<TimetableBlo
   }
 
   async function remove() {
+    // 묻지 않고 같은 반복 일정의 모든 요일을 지운다
     if (!siblings?.length) return
-    const names = WEEK_ORDER.filter((d) => siblings.some((x) => x.weekday === d)).map((d) => WEEKDAYS[d]).join('·')
-    if (confirm(`매주 ${names} 반복 일정을 모두 삭제할까요?`)) {
-      await db.timetable.bulkDelete(siblings.map((x) => x.id))
-      onClose()
-    }
+    await db.timetable.bulkDelete(siblings.map((x) => x.id))
+    onClose()
   }
 
   // 연달아 빠르게 눌러도 앞의 선택이 사라지지 않도록 직전 값을 기준으로 바꾼다
@@ -162,10 +160,9 @@ export function EventSheet({ initial, onClose }: { initial: Partial<PlanEvent>; 
   }
 
   async function remove() {
-    if (ev.id != null && confirm('이 일정을 삭제할까요?')) {
-      await db.events.delete(ev.id)
-      onClose()
-    }
+    if (ev.id == null) return
+    await db.events.delete(ev.id)
+    onClose()
   }
 
   return (

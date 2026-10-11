@@ -138,13 +138,12 @@ function GoalDetailSheet({ id, onClose }: { id: string; onClose: () => void }) {
   }
 
   async function remove() {
-    if (confirm('이 계획을 삭제할까요? 연결된 할 일은 남아 있어요.')) {
-      await db.tasks.where('goalId').equals(id).modify((t) => {
-        delete t.goalId
-      })
-      await db.goals.delete(id)
-      onClose()
-    }
+    // 묻지 않고 지운다. 연결된 할 일은 묶음에서만 빠지고 남는다.
+    await db.tasks.where('goalId').equals(id).modify((t) => {
+      delete t.goalId
+    })
+    await db.goals.delete(id)
+    onClose()
   }
 
   const sorted = [...(tasks ?? [])].sort((a, b) => a.done - b.done || a.createdAt - b.createdAt)
