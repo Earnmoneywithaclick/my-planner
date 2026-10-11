@@ -1,10 +1,10 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useObservable } from 'dexie-react-hooks'
-import { db, replaceAll, TABLES } from '../db'
+import { db, PALETTE, replaceAll, TABLES } from '../db'
 import { todayKey } from '../lib/date'
 import { Button, Card, PageHeader, SectionTitle, TextInput } from '../components/ui'
-import { renameCategory, useCategories } from '../components/Categories'
+import { recolorCategory, renameCategory, useCategories } from '../components/Categories'
 import { ChevronLeft } from '../components/icons'
 
 const BACKUP_APP = 'my-planner'
@@ -91,24 +91,59 @@ function SyncCard() {
   )
 }
 
-/** 색마다 카테고리 이름 바꾸기 — 입력칸에서 나가면 저장 (비우면 기본 이름으로) */
+/**
+ * 카테고리 이름·색 바꾸기. 이름은 입력칸에서 나가면 저장 (비우면 기본 이름으로),
+ * 색은 동그라미를 누르면 펼쳐지는 색 중에서 고른다 (다른 카테고리가 쓰는 색은 고를 수 없음).
+ */
 function CategoryCard() {
   const categories = useCategories()
+  const [picking, setPicking] = useState<number | null>(null)
   return (
     <Card>
       <SectionTitle>카테고리</SectionTitle>
       <ul className="space-y-2">
         {categories.map((c) => (
-          <li key={c.color} className="flex items-center gap-3">
-            <span className="size-5 rounded-full shrink-0" style={{ background: c.color }} />
-            <TextInput
-              key={c.name}
-              aria-label="카테고리 이름"
-              defaultValue={c.name}
-              enterKeyHint="done"
-              onBlur={(e) => e.target.value !== c.name && renameCategory(c.color, e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-            />
+          <li key={c.slot}>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                aria-label={`${c.name} 색 바꾸기`}
+                aria-expanded={picking === c.slot}
+                onClick={() => setPicking(picking === c.slot ? null : c.slot)}
+                className="size-11 grid place-items-center shrink-0"
+              >
+                <span
+                  className="size-7 rounded-full transition-colors"
+                  style={{ background: c.color, boxShadow: picking === c.slot ? `0 0 0 2px var(--card), 0 0 0 4px ${c.color}` : undefined }}
+                />
+              </button>
+              <TextInput
+                key={c.name}
+                aria-label="카테고리 이름"
+                defaultValue={c.name}
+                enterKeyHint="done"
+                onBlur={(e) => e.target.value !== c.name && renameCategory(c.slot, e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+              />
+            </div>
+            {picking === c.slot && (
+              <div className="grid grid-cols-8 gap-2.5 py-3 px-1 animate-fade">
+                {PALETTE.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    aria-label={`색 ${color}`}
+                    disabled={categories.some((o) => o.slot !== c.slot && o.color === color)}
+                    onClick={async () => {
+                      await recolorCategory(c.slot, color)
+                      setPicking(null)
+                    }}
+                    className="aspect-square rounded-full disabled:opacity-15"
+                    style={{ background: color, boxShadow: c.color === color ? `0 0 0 2px var(--card), 0 0 0 4px ${color}` : undefined }}
+                  />
+                ))}
+              </div>
+            )}
           </li>
         ))}
       </ul>

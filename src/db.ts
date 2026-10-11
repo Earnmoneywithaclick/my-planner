@@ -81,10 +81,15 @@ export interface DailyText {
 }
 
 /** 색마다 붙는 카테고리 이름. 사용자가 이름을 바꾼 색만 저장한다. 일정·시간표·계획은 color 로 카테고리를 가리킨다. */
+/**
+ * 카테고리 8칸(slot)마다의 색과 이름. 바꾼 칸만 저장한다 (id = categorySlotId(slot)).
+ * 예전에는 기본 색으로만 이름을 저장했다 (slot 없음, id = categoryId(color)) — 읽을 때 함께 본다.
+ */
 export interface Category {
-  id: string // categoryId(color)
+  id: string
+  slot?: number
   color: string
-  name: string
+  name?: string
 }
 
 export const newId = () => crypto.randomUUID()
@@ -126,8 +131,11 @@ const LEGACY_TABLES = ['goals', 'tasks', 'events', 'timetable', 'questions', 'an
 export const dayId = (date: string) => `day-${date}-${db.cloud.currentUserId}`
 /** 카테고리 이름 기록의 id (색 + 계정) */
 export const categoryId = (color: string) => `cat-${color.replace('#', '')}-${db.cloud.currentUserId}`
+export const categorySlotId = (slot: number) => `catslot${slot}-${db.cloud.currentUserId}`
 
 export const COLORS = ['#2f5d50', '#3b6ea5', '#b5543c', '#c58a1c', '#7a5aa6', '#4f8a3c', '#a2456e', '#5f6b73']
+/** 카테고리 색으로 고를 수 있는 색 (앞 8개가 기본 색) */
+export const PALETTE = [...COLORS, '#2e8b8b', '#d0743c', '#8a6d3b', '#5468c4', '#c2549b', '#6b8f2a', '#3f7fbf', '#9c3d3d']
 /** COLORS 순서와 같은 기본 카테고리 이름 */
 export const DEFAULT_CATEGORY_NAMES = ['영적 활동', '집회', '중요', '약속', '개인', '운동·건강', '가족', '기타']
 
@@ -237,7 +245,7 @@ export function normalizeRows(rows: Rows): Rows {
   out.timetable = (rows.timetable ?? []).map((r) => remap(r))
   // 예전 백업의 dailyText 와 새 days 모두, 지금 계정 기준 id 로 다시 만든다
   out.days = [...(rows.dailyText ?? []), ...(rows.days ?? [])].map((r) => ({ ...strip(r), id: dayId(String(r.date)) }))
-  out.categories = (rows.categories ?? []).map((r) => ({ ...strip(r), id: categoryId(String(r.color)) }))
+  out.categories = (rows.categories ?? []).map((r) => ({ ...strip(r), id: r.slot != null ? categorySlotId(Number(r.slot)) : categoryId(String(r.color)) }))
   return out
 }
 

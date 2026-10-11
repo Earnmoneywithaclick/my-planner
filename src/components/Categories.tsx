@@ -1,33 +1,68 @@
+import { useEffect } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { COLORS, DEFAULT_CATEGORY_NAMES, categoryId, db } from '../db'
+import { COLORS, DEFAULT_CATEGORY_NAMES, categoryId, categorySlotId, db, type Category } from '../db'
 
-export type CategoryInfo = { color: string; name: string }
+export type CategoryInfo = { slot: number; color: string; name: string }
 
-/** 8가지 색과 그 카테고리 이름 (이름을 바꾸지 않은 색은 기본 이름) */
-export function useCategories(): CategoryInfo[] {
+/** 저장된 기록으로 8칸의 지금 색·이름을 계산한다 (바꾸지 않은 칸은 기본값) */
+function resolve(saved: Category[] | undefined): CategoryInfo[] {
+  return COLORS.map((def, slot) => {
+    const rec = saved?.find((c) => c.slot === slot)
+    const legacy = saved?.find((c) => c.slot == null && c.color === def)
+    return { slot, color: rec?.color ?? def, name: rec?.name || legacy?.name || DEFAULT_CATEGORY_NAMES[slot] }
+  })
+}
+
+/** 카테고리 8칸과 불러오기가 끝났는지 */
+export function useCategoryList() {
   const saved = useLiveQuery(() => db.categories.toArray(), [])
-  const names = new Map(saved?.map((c) => [c.color, c.name]))
-  return COLORS.map((color, i) => ({ color, name: names.get(color) || DEFAULT_CATEGORY_NAMES[i] }))
+  return { list: resolve(saved), loaded: saved !== undefined }
 }
 
-export async function renameCategory(color: string, name: string) {
-  const i = COLORS.indexOf(color)
-  const trimmed = name.trim()
-  // 비우거나 기본 이름으로 되돌리면 저장된 이름을 지운다
-  if (!trimmed || trimmed === DEFAULT_CATEGORY_NAMES[i]) await db.categories.delete(categoryId(color))
-  else await db.categories.put({ id: categoryId(color), color, name: trimmed })
+export const useCategories = () => useCategoryList().list
+
+async function writeSlot(slot: number, color: string, name: string) {
+  await db.categories.delete(categoryId(COLORS[slot])) // 예전 방식 기록은 정리
+  if (color === COLORS[slot] && name === DEFAULT_CATEGORY_NAMES[slot]) await db.categories.delete(categorySlotId(slot))
+  else await db.categories.put({ id: categorySlotId(slot), slot, color, name })
 }
 
-/** 일정·시간표·계획 입력 창에서 카테고리(색) 고르기 */
+/** 이름 바꾸기 — 비우면 기본 이름으로 */
+export async function renameCategory(slot: number, name: string) {
+  const cur = resolve(await db.categories.toArray())[slot]
+  await writeSlot(slot, cur.color, name.trim() || DEFAULT_CATEGORY_NAMES[slot])
+}
+
+/** 색 바꾸기 — 이 카테고리였던 일정·반복 일정·묶음도 함께 새 색으로 */
+export async function recolorCategory(slot: number, color: string) {
+  await db.transaction('rw', [db.categories, db.events, db.timetable, db.goals], async () => {
+    const all = resolve(await db.categories.toArray())
+    const cur = all[slot]
+    if (cur.color === color || all.some((c) => c.slot !== slot && c.color === color)) return
+    await db.events.filter((x) => x.color === cur.color).modify({ color })
+    await db.timetable.filter((x) => x.color === cur.color).modify({ color })
+    await db.goals.filter((x) => x.color === cur.color).modify({ color })
+    await writeSlot(slot, color, cur.name)
+  })
+}
+
+/** 일정·시간표·묶음 입력 창에서 카테고리(색) 고르기 */
 export function CategoryPicker({ value, onChange }: { value: string; onChange: (color: string) => void }) {
-  const categories = useCategories()
+  const { list, loaded } = useCategoryList()
+  const colors = list.map((c) => c.color).join()
+  // 기본 색으로 시작했는데 그 칸의 색이 바뀌었으면, 같은 칸의 지금 색으로 맞춘다
+  useEffect(() => {
+    if (!loaded || list.some((c) => c.color === value)) return
+    const i = COLORS.indexOf(value)
+    onChange(list[i >= 0 ? i : 0].color)
+  }, [loaded, colors, value]) // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="카테고리">
-      {categories.map((c) => {
+      {list.map((c) => {
         const on = value === c.color
         return (
           <button
-            key={c.color}
+            key={c.slot}
             type="button"
             role="radio"
             aria-checked={on}
@@ -51,7 +86,7 @@ export function CategoryLegend({ colors }: { colors: Set<string> }) {
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-1.5 px-3 pt-3">
       {categories.map((c) => (
-        <span key={c.color} className="flex items-center gap-1.5 text-[15px] text-ink-2">
+        <span key={c.slot} className="flex items-center gap-1.5 text-[15px] text-ink-2">
           <span className="size-3 rounded-full" style={{ background: c.color }} />
           {c.name}
         </span>
