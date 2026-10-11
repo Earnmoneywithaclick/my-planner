@@ -76,6 +76,7 @@ export interface DailyText {
   read: 0 | 1
   prayed?: 0 | 1 // 오늘 기도했는지
   study?: 0 | 1 // 오늘 개인 연구했는지
+  serviceMin?: number // 오늘 봉사한 시간 (분)
   memo: string
   updatedAt: number
 }
@@ -129,6 +130,13 @@ const LEGACY_TABLES = ['goals', 'tasks', 'events', 'timetable', 'questions', 'an
 
 /** 날짜별 기록(성구·기도·연구)의 id. 날짜만 쓰면 다른 계정과 겹쳐 서버가 거절하므로 계정 id 를 붙인다. */
 export const dayId = (date: string) => `day-${date}-${db.cloud.currentUserId}`
+/** 그 날짜의 기록(성구·기도·연구·봉사)을 일부만 고친다. 없으면 새로 만든다. */
+export async function patchDay(date: string, patch: Partial<DailyText>) {
+  const id = dayId(date)
+  const cur = await db.days.get(id)
+  await db.days.put({ read: 0, memo: '', ...cur, ...patch, id, date, updatedAt: Date.now() })
+}
+
 /** 카테고리 이름 기록의 id (색 + 계정) */
 export const categoryId = (color: string) => `cat-${color.replace('#', '')}-${db.cloud.currentUserId}`
 export const categorySlotId = (slot: number) => `catslot${slot}-${db.cloud.currentUserId}`

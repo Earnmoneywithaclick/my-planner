@@ -7,6 +7,7 @@ import { useAgenda, useNow } from '../lib/hooks'
 import { Button, Card, IconButton, PageHeader, SectionTitle, TextArea, TextInput } from '../components/ui'
 import { GearIcon, PlusIcon } from '../components/icons'
 import { DailyTextCard } from '../components/DailyTextCard'
+import { ServiceCard } from '../components/ServiceCard'
 import { AgendaList } from '../components/AgendaList'
 import { TaskRow, TaskSheet } from '../components/TaskSheet'
 import { BlockSheet, EventSheet } from '../components/ScheduleSheets'
@@ -32,6 +33,8 @@ export default function Today() {
       />
       <div className="gutter board">
         <DailyTextCard key={today} date={today} />
+
+        <ServiceCard key={`s-${today}`} date={today} />
 
         <Card>
           <SectionTitle

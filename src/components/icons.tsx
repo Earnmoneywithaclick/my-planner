@@ -75,6 +75,12 @@ export const PinIcon = (p: P) => (
     <path d="M12 17v5M8 3h8l-1 6 3 3v2H6v-2l3-3z" />
   </Base>
 )
+export const BagIcon = (p: P) => (
+  <Base {...p}>
+    <rect x="3" y="7" width="18" height="13" rx="2.5" />
+    <path d="M8.5 7V5.5A1.5 1.5 0 0 1 10 4h4a1.5 1.5 0 0 1 1.5 1.5V7M3 12.5h18" />
+  </Base>
+)
 export const MoreIcon = (p: P) => (
   <Base {...p}>
     <circle cx="5" cy="12" r="1.3" fill="currentColor" />

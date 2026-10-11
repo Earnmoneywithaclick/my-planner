@@ -1,17 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery, useObservable } from 'dexie-react-hooks'
 import { eachDayOfInterval, endOfMonth, startOfMonth } from 'date-fns'
-import { db, dayId, type DailyText } from '../db'
+import { db, dayId, patchDay as patchDaily } from '../db'
 import { dailyTextUrl, fromKey, shiftKey, toKey } from '../lib/date'
 import { Card, TextArea } from './ui'
 import { BookIcon, CheckIcon, ExternalIcon, FlameIcon } from './icons'
 import { useChanged } from '../lib/motion'
-
-async function patchDaily(date: string, patch: Partial<DailyText>) {
-  const id = dayId(date)
-  const cur = await db.days.get(id)
-  await db.days.put({ read: 0, memo: '', ...cur, ...patch, id, date, updatedAt: Date.now() })
-}
 
 /** 오늘부터(오늘 아직 안 읽었으면 어제부터) 거꾸로 연속해서 읽은 날 수 */
 function streakOf(readDays: Set<string>, today: string) {
