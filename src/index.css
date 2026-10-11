@@ -1,0 +1,116 @@
+@import 'tailwindcss';
+
+:root {
+  --bg: #f5f3ee;
+  --card: #ffffff;
+  --card-2: #efece5;
+  --ink: #1d1d1b;
+  --ink-2: #5d5b55;
+  --ink-3: #94918a;
+  --line: #e4e0d7;
+  --accent: #2f5d50;
+  --accent-soft: #dfe9e4;
+  --gold: #c58a1c;
+  --gold-soft: #f6ead1;
+  --danger: #b5543c;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #151513;
+    --card: #1f1f1c;
+    --card-2: #2a2a26;
+    --ink: #f1efe9;
+    --ink-2: #b9b6ae;
+    --ink-3: #7f7c75;
+    --line: #34332f;
+    --accent: #7fbfa8;
+    --accent-soft: #23352f;
+    --gold: #e9b44c;
+    --gold-soft: #3a2f19;
+    --danger: #e08a72;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-card-2: var(--card-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-danger: var(--danger);
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Pretendard', 'Malgun Gothic', system-ui, sans-serif;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior-y: none;
+}
+
+body {
+  font-family: var(--font-sans);
+  word-break: keep-all;
+}
+
+/* iOS는 16px 미만 입력칸에 포커스하면 화면을 확대하므로 16px 유지 */
+input,
+textarea,
+select {
+  font-size: 16px;
+}
+
+input[type='date'],
+input[type='time'] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 44px;
+}
+
+.pt-safe {
+  padding-top: max(env(safe-area-inset-top), 12px);
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.animate-sheet {
+  animation: sheet-up 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.animate-fade {
+  animation: fade-in 0.2s ease-out;
+}
