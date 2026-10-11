@@ -42,10 +42,12 @@ export function effectiveEnd(start: string, end?: string) {
   return `${String(Math.min(h + 1, 24)).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 }
 
-/** 그 날짜의 '일용할 성구' 페이지 (워치타워 온라인 라이브러리, 한국어) */
+/**
+ * 그 날짜의 '일용할 성구' 링크 (한국어). jw.org 공유 링크라서, 아이폰에 JW Library 앱이 있으면 앱에서 열리고
+ * (앱은 다크 모드 지원) 없으면 워치타워 온라인 라이브러리 웹 페이지로 이동한다.
+ */
 export function dailyTextUrl(key: string) {
-  const d = fromKey(key)
-  return `https://wol.jw.org/ko/wol/h/r8/lp-ko/${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`
+  return `https://www.jw.org/finder?srcid=jwlshare&wtlocale=KO&prefer=lang&alias=daily-text&date=${key.replaceAll('-', '')}`
 }
 
 /** 날짜 문자열로 만드는 간단한 해시 — 매일 다른 질문을 고정적으로 고를 때 사용 */

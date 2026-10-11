@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { addDays, addMonths, endOfMonth, endOfWeek, startOfMonth, startOfWeek } from 'date-fns'
 import { db } from '../db'
@@ -24,6 +24,17 @@ export function MonthCalendar({ today, selected, onSelect, onAdd }: { today: str
   for (let d = gridStart; d <= gridEnd; d = addDays(d, 1)) days.push(toKey(d))
   const monthKey = toKey(month).slice(0, 7)
   const lastTap = useRef<{ day: string; at: number } | null>(null)
+  const touch = useRef<{ x: number; y: number } | null>(null)
+
+  // 달이 바뀐 방향(다음 달 → 오른쪽에서, 이전 달 → 왼쪽에서)으로 살짝 밀려 들어오게 한다.
+  // 일정을 다시 읽어 와 다시 그려져도 애니메이션이 끊기지 않도록 방향을 state 로 들고 있는다.
+  const prevMonth = useRef(monthKey)
+  const [slide, setSlide] = useState('')
+  useLayoutEffect(() => {
+    if (monthKey === prevMonth.current) return
+    setSlide(monthKey > prevMonth.current ? 'animate-month-next' : 'animate-month-prev')
+    prevMonth.current = monthKey
+  }, [monthKey])
 
   const data = useLiveQuery(async () => {
     const [events, blocks] = await Promise.all([db.events.where('date').between(days[0], days[days.length - 1], true, true).toArray(), db.timetable.toArray()])
@@ -73,6 +84,21 @@ export function MonthCalendar({ today, selected, onSelect, onAdd }: { today: str
             {WEEKDAYS[wd]}
           </span>
         ))}
+      </div>
+      {/* 좌우로 밀어서 달 넘기기 */}
+      <div
+        className="overflow-hidden"
+        onTouchStart={(e) => (touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY })}
+        onTouchEnd={(e) => {
+          const start = touch.current
+          touch.current = null
+          if (!start) return
+          const dx = e.changedTouches[0].clientX - start.x
+          const dy = e.changedTouches[0].clientY - start.y
+          if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) moveMonth(dx < 0 ? 1 : -1)
+        }}
+      >
+      <div key={monthKey} className={`grid grid-cols-7 ${slide}`}>
         {days.map((d) => {
           const inMonth = d.startsWith(monthKey)
           const isSel = d === selected
@@ -108,6 +134,7 @@ export function MonthCalendar({ today, selected, onSelect, onAdd }: { today: str
             </button>
           )
         })}
+      </div>
       </div>
     </Card>
   )

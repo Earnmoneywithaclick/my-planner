@@ -98,6 +98,40 @@ input[type='time'] {
   animation: fade-in 0.2s ease-out;
 }
 
+/* 달력 넘길 때 */
+@keyframes month-next {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes month-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-month-next {
+  animation: month-next 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.animate-month-prev {
+  animation: month-prev 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-month-next,
+  .animate-month-prev {
+    animation: none;
+  }
+}
+
 /* 좌우 여백 — 아이패드에서는 조금 넓게 */
 .gutter {
   padding-inline: 16px;
