@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db, newId, type Task } from '../db'
-import { Button, CheckCircle, PRIORITY_LABEL, Segmented, Select, Sheet, TextArea, TextInput } from './ui'
+import { COLORS, db, newId, type Task } from '../db'
+import { Button, CheckCircle, Chip, PRIORITY_LABEL, Segmented, Select, Sheet, TextArea, TextInput } from './ui'
 import { todayKey, shiftKey } from '../lib/date'
 
 export function TaskSheet({ initial, onClose }: { initial: Partial<Task>; onClose: () => void }) {
@@ -77,6 +77,68 @@ export function TaskSheet({ initial, onClose }: { initial: Partial<Task>; onClos
         </Select>
       )}
       <TextArea value={t.note ?? ''} onChange={(e) => set({ note: e.target.value })} placeholder="메모" />
+    </Sheet>
+  )
+}
+
+/** 줄마다 하나씩 할 일로 나눈다. 앞의 '-', '•', '1.' 같은 목록 기호는 뗀다. */
+export const splitLines = (text: string) =>
+  text
+    .split('\n')
+    .map((l) => l.replace(/^\s*(?:[-•*·]|\d+[.)])\s+/, '').trim())
+    .filter(Boolean)
+
+/** 같은 이름의 계획(묶음)이 있으면 거기에, 없으면 새로 만들어서 할 일 여러 개를 한 번에 넣는다. */
+export async function addTaskGroup(groupName: string, titles: string[]) {
+  const name = groupName.trim()
+  let goalId: string | undefined
+  if (name) {
+    const existing = (await db.goals.toArray()).find((g) => g.title === name && g.status !== 'done')
+    goalId = existing?.id
+    if (!goalId) {
+      goalId = newId()
+      await db.goals.add({ id: goalId, title: name, color: COLORS[4], status: 'active', createdAt: Date.now() })
+    }
+  }
+  const now = Date.now()
+  await db.tasks.bulkAdd(titles.map((title, i) => ({ id: newId(), title, goalId, priority: 1 as const, done: 0 as const, createdAt: now + i })))
+}
+
+/** 할 일 여러 개를 한 묶음으로 한 번에 추가 */
+export function BulkTaskSheet({ onClose }: { onClose: () => void }) {
+  const goals = useLiveQuery(() => db.goals.where('status').notEqual('done').toArray(), [])
+  const [group, setGroup] = useState('')
+  const [text, setText] = useState('')
+  const titles = splitLines(text)
+
+  async function save() {
+    if (!titles.length) return
+    await addTaskGroup(group, titles)
+    onClose()
+  }
+
+  return (
+    <Sheet
+      open
+      title="묶음으로 추가"
+      onClose={onClose}
+      footer={
+        <Button className="flex-1" onClick={save} disabled={!titles.length}>
+          {titles.length ? `할 일 ${titles.length}개 추가` : '추가'}
+        </Button>
+      }
+    >
+      <TextInput autoFocus placeholder="묶음 이름 (예: 한국 가면 할 일)" value={group} onChange={(e) => setGroup(e.target.value)} />
+      {!!goals?.length && (
+        <div className="flex gap-2 flex-wrap">
+          {goals.map((g) => (
+            <Chip key={g.id} active={group === g.title} onClick={() => setGroup(group === g.title ? '' : g.title)}>
+              {g.title}
+            </Chip>
+          ))}
+        </div>
+      )}
+      <TextArea rows={10} placeholder={'한 줄에 하나씩\n예)\n여권 갱신\n미용실'}value={text} onChange={(e) => setText(e.target.value)} />
     </Sheet>
   )
 }

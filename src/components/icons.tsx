@@ -75,6 +75,11 @@ export const PinIcon = (p: P) => (
     <path d="M12 17v5M8 3h8l-1 6 3 3v2H6v-2l3-3z" />
   </Base>
 )
+export const ListPlusIcon = (p: P) => (
+  <Base {...p}>
+    <path d="M4 6h11M4 12h11M4 18h7M18 15v6M15 18h6" />
+  </Base>
+)
 export const FlameIcon = (p: P) => (
   <Base {...p}>
     <path d="M12 3c.6 3.2 2.4 4.9 3.8 6.6C17.2 11.3 18 12.9 18 15a6 6 0 0 1-12 0c0-2 .8-3.6 2-4.8.2 1.5 1 2.6 2.3 3.1C10 10 10.8 6.4 12 3z" />
