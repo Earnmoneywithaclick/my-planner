@@ -20,7 +20,8 @@ export default function Tasks() {
   const { today } = useNow()
   const [filter, setFilter] = useState<Filter>('open')
   const [edit, setEdit] = useState<Partial<Task> | null>(null)
-  const [bulk, setBulk] = useState(false)
+  // null: 닫힘, '': 새 묶음, 그 밖: 그 이름의 묶음에 추가
+  const [bulk, setBulk] = useState<string | null>(null)
 
   const data = useLiveQuery(async () => {
     const [tasks, goals] = await Promise.all([db.tasks.toArray(), db.goals.toArray()])
@@ -35,7 +36,7 @@ export default function Tasks() {
         title="할 일"
         right={
           <div className="flex gap-2">
-            <IconButton label="묶음으로 추가" className="bg-accent-soft text-accent" onClick={() => setBulk(true)}>
+            <IconButton label="묶음으로 추가" className="bg-accent-soft text-accent" onClick={() => setBulk('')}>
               <ListPlusIcon />
             </IconButton>
             <IconButton label="할 일 추가" className="bg-accent text-bg" onClick={() => setEdit({ dueDate: filter === 'today' ? today : undefined })}>
@@ -54,10 +55,17 @@ export default function Tasks() {
       <div className="gutter board board-3">
         {groups.map((g) => (
           <Card key={g.label}>
-            <h2 className={`flex items-center gap-2 text-[17px] font-bold ${g.danger ? 'text-danger' : ''}`}>
-              {g.color && <span className="size-3 rounded-full shrink-0" style={{ background: g.color }} />}
-              {g.label}
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className={`flex-1 flex items-center gap-2 text-[17px] font-bold ${g.danger ? 'text-danger' : ''}`}>
+                {g.color && <span className="size-3 rounded-full shrink-0" style={{ background: g.color }} />}
+                {g.label}
+              </h2>
+              {g.group && (
+                <IconButton label={`${g.label}에 추가`} className="-my-2 -mr-2 text-accent" onClick={() => setBulk(g.label)}>
+                  <PlusIcon />
+                </IconButton>
+              )}
+            </div>
             <ul className="divide-y divide-line">
               {g.items.map((t) => (
                 <TaskRow key={t.id} task={t} goalColor={t.goalId != null ? data?.goals.get(t.goalId)?.color : undefined} onOpen={() => setEdit(t)} />
@@ -67,12 +75,12 @@ export default function Tasks() {
         ))}
       </div>
       {edit && <TaskSheet initial={edit} onClose={() => setEdit(null)} />}
-      {bulk && <BulkTaskSheet onClose={() => setBulk(false)} />}
+      {bulk !== null && <BulkTaskSheet existingGroup={bulk || undefined} onClose={() => setBulk(null)} />}
     </>
   )
 }
 
-function groupTasks(tasks: Task[], filter: Filter, today: string, goals: Map<string, Goal>): { label: string; items: Task[]; danger?: boolean; color?: string }[] {
+function groupTasks(tasks: Task[], filter: Filter, today: string, goals: Map<string, Goal>): { label: string; items: Task[]; danger?: boolean; color?: string; group?: boolean }[] {
   const byPriority = (a: Task, b: Task) => b.priority - a.priority || a.createdAt - b.createdAt
   if (filter === 'done') {
     const done = tasks.filter((t) => t.done).sort((a, b) => (b.doneAt ?? 0) - (a.doneAt ?? 0))
@@ -98,7 +106,7 @@ function groupTasks(tasks: Task[], filter: Filter, today: string, goals: Map<str
   const byGoal = new Map<string, Task[]>()
   for (const t of noDate) if (t.goalId && goals.has(t.goalId)) byGoal.set(t.goalId, [...(byGoal.get(t.goalId) ?? []), t])
   const loose = noDate.filter((t) => !t.goalId || !goals.has(t.goalId))
-  const goalGroups = [...byGoal].map(([id, items]) => ({ label: goals.get(id)!.title, color: goals.get(id)!.color, items, in: ['open', 'nodate'] }))
+  const goalGroups = [...byGoal].map(([id, items]) => ({ label: goals.get(id)!.title, color: goals.get(id)!.color, group: true, items, in: ['open', 'nodate'] }))
 
   const all = [
     { label: '기한 지남', items: overdue, danger: true, in: ['open', 'today'] },

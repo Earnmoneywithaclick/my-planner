@@ -104,9 +104,9 @@ export async function addTaskGroup(groupName: string, titles: string[]) {
   await db.tasks.bulkAdd(titles.map((title, i) => ({ id: newId(), title, goalId, priority: 1 as const, done: 0 as const, createdAt: now + i })))
 }
 
-/** 할 일 여러 개를 한 묶음으로 한 번에 추가 */
-export function BulkTaskSheet({ onClose }: { onClose: () => void }) {
-  const [group, setGroup] = useState('')
+/** 할 일 여러 개를 한 묶음으로 한 번에 추가. existingGroup 을 주면 그 묶음에 바로 추가한다. */
+export function BulkTaskSheet({ onClose, existingGroup }: { onClose: () => void; existingGroup?: string }) {
+  const [group, setGroup] = useState(existingGroup ?? '')
   const [text, setText] = useState('')
   const titles = splitLines(text)
 
@@ -119,7 +119,7 @@ export function BulkTaskSheet({ onClose }: { onClose: () => void }) {
   return (
     <Sheet
       open
-      title="묶음으로 추가"
+      title={existingGroup ? `${existingGroup}에 추가` : '묶음으로 추가'}
       onClose={onClose}
       footer={
         <Button className="flex-1" onClick={save} disabled={!titles.length}>
@@ -127,8 +127,8 @@ export function BulkTaskSheet({ onClose }: { onClose: () => void }) {
         </Button>
       }
     >
-      <TextInput autoFocus placeholder="묶음 이름" value={group} onChange={(e) => setGroup(e.target.value)} />
-      <TextArea rows={10} placeholder="한 줄에 하나씩" value={text} onChange={(e) => setText(e.target.value)} />
+      {!existingGroup && <TextInput autoFocus placeholder="묶음 이름" value={group} onChange={(e) => setGroup(e.target.value)} />}
+      <TextArea autoFocus={!!existingGroup} rows={10} placeholder="한 줄에 하나씩" value={text} onChange={(e) => setText(e.target.value)} />
     </Sheet>
   )
 }
