@@ -112,7 +112,8 @@ export function BulkTaskSheet({ onClose, existingGroup }: { onClose: () => void;
   const titles = splitLines(text)
 
   async function save() {
-    if (!titles.length) return
+    // 이름만 적으면 빈 묶음을 만든다
+    if (!titles.length && (existingGroup || !group.trim())) return
     await addTaskGroup(group, titles)
     onClose()
   }
@@ -123,8 +124,8 @@ export function BulkTaskSheet({ onClose, existingGroup }: { onClose: () => void;
       title={existingGroup ? `${existingGroup}에 추가` : '묶음으로 추가'}
       onClose={onClose}
       footer={
-        <Button className="flex-1" onClick={save} disabled={!titles.length}>
-          {titles.length ? `할 일 ${titles.length}개 추가` : '추가'}
+        <Button className="flex-1" onClick={save} disabled={!titles.length && (!!existingGroup || !group.trim())}>
+          {titles.length ? `할 일 ${titles.length}개 추가` : existingGroup ? '추가' : '묶음 만들기'}
         </Button>
       }
     >

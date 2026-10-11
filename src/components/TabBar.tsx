@@ -1,11 +1,10 @@
 import { NavLink } from 'react-router-dom'
-import { SunIcon, CalendarIcon, CheckSquareIcon, FlagIcon, QuestionIcon } from './icons'
+import { SunIcon, CalendarIcon, CheckSquareIcon, QuestionIcon } from './icons'
 
 const TABS = [
   { to: '/', label: '오늘', Icon: SunIcon },
   { to: '/timetable', label: '시간표', Icon: CalendarIcon },
   { to: '/tasks', label: '할 일', Icon: CheckSquareIcon },
-  { to: '/plans', label: '계획', Icon: FlagIcon },
   { to: '/questions', label: '질문', Icon: QuestionIcon },
 ]
 

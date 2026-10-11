@@ -75,6 +75,13 @@ export const PinIcon = (p: P) => (
     <path d="M12 17v5M8 3h8l-1 6 3 3v2H6v-2l3-3z" />
   </Base>
 )
+export const MoreIcon = (p: P) => (
+  <Base {...p}>
+    <circle cx="5" cy="12" r="1.3" fill="currentColor" />
+    <circle cx="12" cy="12" r="1.3" fill="currentColor" />
+    <circle cx="19" cy="12" r="1.3" fill="currentColor" />
+  </Base>
+)
 export const ListPlusIcon = (p: P) => (
   <Base {...p}>
     <path d="M4 6h11M4 12h11M4 18h7M18 15v6M15 18h6" />
