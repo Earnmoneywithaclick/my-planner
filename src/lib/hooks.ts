@@ -26,10 +26,18 @@ export type AgendaItem =
 export function useAgenda(dateKey: string): AgendaItem[] | undefined {
   return useLiveQuery(async () => {
     const weekday = fromKey(dateKey).getDay()
-    const [blocks, events] = await Promise.all([db.timetable.where('weekday').equals(weekday).toArray(), db.events.where('date').equals(dateKey).toArray()])
+    const [blocks, events] = await Promise.all([
+      db.timetable.where('weekday').equals(weekday).toArray(),
+      // 이날 시작했거나, 전에 시작해서 이날까지 이어지는 일정
+      db.events.where('date').belowOrEqual(dateKey).filter((e) => (e.endDate ?? e.date) >= dateKey).toArray(),
+    ])
     const items: AgendaItem[] = [
       ...blocks.map((b) => ({ kind: 'block' as const, key: `b${b.id}`, title: b.title, start: b.start, end: b.end, color: b.color, block: b })),
-      ...events.map((e) => ({ kind: 'event' as const, key: `e${e.id}`, title: e.title, start: e.start, end: e.end, color: e.color, event: e })),
+      ...events.map((e) => {
+        const firstDay = e.date === dateKey
+        const lastDay = (e.endDate ?? e.date) === dateKey
+        return { kind: 'event' as const, key: `e${e.id}`, title: e.title, start: firstDay ? e.start : undefined, end: firstDay && lastDay ? e.end : undefined, color: e.color, event: e }
+      }),
     ]
     // 하루 종일 일정이 맨 위, 나머지는 시작 시간순
     return items.sort((a, b) => (a.start ?? '').localeCompare(b.start ?? ''))

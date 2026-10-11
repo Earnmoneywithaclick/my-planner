@@ -137,7 +137,7 @@ export function BlockSheet({ initial, onClose }: { initial: Partial<TimetableBlo
   )
 }
 
-/** 특정 날짜의 일정 — 시작 시간을 비우면 하루 종일 */
+/** 날짜를 정한 일정 — 시작 시간을 비우면 하루 종일, 마지막 날을 고르면 며칠 이어지는 일정 */
 export function EventSheet({ initial, onClose }: { initial: Partial<PlanEvent>; onClose: () => void }) {
   const [ev, setEv] = useState<Partial<PlanEvent>>({ color: COLORS[3], ...initial })
   const isNew = ev.id == null
@@ -149,6 +149,7 @@ export function EventSheet({ initial, onClose }: { initial: Partial<PlanEvent>; 
     const data = {
       title: ev.title!.trim(),
       date: ev.date!,
+      endDate: ev.endDate && ev.endDate > ev.date! ? ev.endDate : undefined,
       start: ev.start || undefined,
       end: (ev.start && ev.end) || undefined,
       note: ev.note?.trim() || undefined,
@@ -168,7 +169,11 @@ export function EventSheet({ initial, onClose }: { initial: Partial<PlanEvent>; 
   return (
     <Sheet open title={isNew ? '새 일정' : '일정 수정'} onClose={onClose} footer={<Footer isNew={isNew} valid={valid} onSave={save} onRemove={remove} />}>
       <TextInput autoFocus={isNew} placeholder="일정 이름" value={ev.title ?? ''} onChange={(e) => set({ title: e.target.value })} />
-      <TextInput type="date" aria-label="날짜" value={ev.date ?? ''} onChange={(e) => set({ date: e.target.value })} />
+      <div className="flex items-center gap-2">
+        <TextInput type="date" aria-label="시작 날짜" value={ev.date ?? ''} onChange={(e) => set({ date: e.target.value })} />
+        <span className="text-ink-3 text-[17px]">~</span>
+        <TextInput type="date" aria-label="마지막 날 (하루면 비워 두기)" min={ev.date} value={ev.endDate ?? ''} onChange={(e) => set({ endDate: e.target.value || undefined })} />
+      </div>
       <TimeRange start={ev.start} end={ev.end} onChange={set} startEmptyLabel="하루 종일" />
       <TextArea placeholder="메모" value={ev.note ?? ''} onChange={(e) => set({ note: e.target.value })} />
       <CategoryPicker value={ev.color!} onChange={(color) => set({ color })} />

@@ -42,9 +42,17 @@ export function MonthCalendar({ today, selected, onSelect, onAdd }: { today: str
   }, [monthKey])
 
   const data = useLiveQuery(async () => {
-    const events = await db.events.where('date').between(days[0], days[days.length - 1], true, true).toArray()
+    const first = days[0]
+    const last = days[days.length - 1]
+    const events = await db.events.where('date').belowOrEqual(last).filter((e) => (e.endDate ?? e.date) >= first).toArray()
     const byDate = new Map<string, CalItem[]>()
-    for (const e of events) byDate.set(e.date, [...(byDate.get(e.date) ?? []), { key: e.id, title: e.title, color: e.color, start: e.start }])
+    for (const e of events) {
+      // 며칠 이어지는 일정은 걸쳐 있는 날마다 점을 찍는다
+      for (const d of days) {
+        if (d < e.date || d > (e.endDate ?? e.date)) continue
+        byDate.set(d, [...(byDate.get(d) ?? []), { key: e.id, title: e.title, color: e.color, start: d === e.date ? e.start : undefined }])
+      }
+    }
     return byDate
   }, [days[0], days[days.length - 1]])
 

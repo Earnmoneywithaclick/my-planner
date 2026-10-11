@@ -71,7 +71,15 @@ function DayView({
   onEvent: (e: Partial<PlanEvent>) => void
 }) {
   const agenda = useAgenda(selected)
-  const upcoming = useLiveQuery(() => db.events.where('date').between(shiftKey(today, 1), shiftKey(today, 60), true, true).sortBy('date'), [today])
+  const upcoming = useLiveQuery(
+    () =>
+      db.events
+        .where('date')
+        .belowOrEqual(shiftKey(today, 60))
+        .filter((e) => (e.endDate ?? e.date) > today)
+        .sortBy('date'),
+    [today],
+  )
 
   return (
     <div className="board">
@@ -85,13 +93,13 @@ function DayView({
           <SectionTitle>다가오는 일정</SectionTitle>
           <AnimatedList className="divide-y divide-line">
             {upcoming.slice(0, 20).map((e) => (
-              <FlashLi key={e.id} signal={`${e.title}|${e.date}|${e.start}|${e.color}`}>
+              <FlashLi key={e.id} signal={`${e.title}|${e.date}|${e.endDate}|${e.start}|${e.color}`}>
                 <button type="button" onClick={() => onEvent(e)} className="w-full flex items-center gap-3 py-3 text-left">
                   <span className="w-1 self-stretch rounded-full" style={{ background: e.color }} />
                   <span className="flex-1 min-w-0 text-[17px] truncate">{e.title}</span>
                   <span className="text-[15px] text-ink-3 tabular-nums">
                     {fmt(e.date, 'M/d')}
-                    {e.start && ` ${shortTime(e.start)}`}
+                    {e.endDate && e.endDate > e.date ? `–${fmt(e.endDate, 'M/d')}` : e.start && ` ${shortTime(e.start)}`}
                   </span>
                 </button>
               </FlashLi>

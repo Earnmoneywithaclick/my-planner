@@ -33,7 +33,8 @@ export interface Task {
 export interface PlanEvent {
   id: string
   title: string
-  date: string
+  date: string // 시작 날짜
+  endDate?: string // 며칠 이어지는 일정의 마지막 날 (없으면 하루짜리)
   start?: string // HH:mm — 없으면 하루 종일
   end?: string
   note?: string
