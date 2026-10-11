@@ -1,37 +1,20 @@
 @import 'tailwindcss';
 
+/* 항상 다크 모드 (아이폰 설정과 상관없이) */
 :root {
-  --bg: #f5f3ee;
-  --card: #ffffff;
-  --card-2: #efece5;
-  --ink: #1d1d1b;
-  --ink-2: #5d5b55;
-  --ink-3: #94918a;
-  --line: #e4e0d7;
-  --accent: #2f5d50;
-  --accent-soft: #dfe9e4;
-  --gold: #c58a1c;
-  --gold-soft: #f6ead1;
-  --danger: #b5543c;
-  color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #151513;
-    --card: #1f1f1c;
-    --card-2: #2a2a26;
-    --ink: #f1efe9;
-    --ink-2: #b9b6ae;
-    --ink-3: #7f7c75;
-    --line: #34332f;
-    --accent: #7fbfa8;
-    --accent-soft: #23352f;
-    --gold: #e9b44c;
-    --gold-soft: #3a2f19;
-    --danger: #e08a72;
-    color-scheme: dark;
-  }
+  --bg: #0a0a09;
+  --card: #161614;
+  --card-2: #22221f;
+  --ink: #f1efe9;
+  --ink-2: #b9b6ae;
+  --ink-3: #7f7c75;
+  --line: #2a2a26;
+  --accent: #7fbfa8;
+  --accent-soft: #1c2c27;
+  --gold: #e9b44c;
+  --gold-soft: #2e2514;
+  --danger: #e08a72;
+  color-scheme: dark;
 }
 
 @theme inline {

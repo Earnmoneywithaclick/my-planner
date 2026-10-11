@@ -164,7 +164,7 @@ function GoalDetailSheet({ id, onClose }: { id: number; onClose: () => void }) {
         <span className="size-4 rounded-full shrink-0" style={{ background: goal.color }} />
         <p className="text-[22px] font-bold leading-snug">{goal.title}</p>
       </div>
-      {goal.why && <p className="bg-card rounded-xl p-3.5 text-[16px] whitespace-pre-wrap leading-relaxed">{goal.why}</p>}
+      {goal.why && <p className="bg-card-2 rounded-xl p-3.5 text-[16px] whitespace-pre-wrap leading-relaxed">{goal.why}</p>}
       <form
         onSubmit={(e) => {
           e.preventDefault()

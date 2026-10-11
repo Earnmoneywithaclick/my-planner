@@ -128,7 +128,7 @@ export function QuestionSheet({ initial, onClose }: { initial: Partial<Question>
       </Button>
       <ReviewButtons q={q} />
       {answers?.map((a) => (
-        <p key={a.id} className="bg-card rounded-xl p-3.5 text-[16px] whitespace-pre-wrap leading-relaxed">
+        <p key={a.id} className="bg-card-2 rounded-xl p-3.5 text-[16px] whitespace-pre-wrap leading-relaxed">
           {a.text}
         </p>
       ))}

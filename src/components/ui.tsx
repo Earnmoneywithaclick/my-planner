@@ -129,8 +129,8 @@ export function Sheet({ open, title, onClose, children, footer }: { open: boolea
   if (!open) return null
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="absolute inset-0 bg-black/35 animate-fade" onClick={onClose} />
-      <div className="relative bg-bg rounded-t-3xl max-h-[92dvh] flex flex-col animate-sheet">
+      <div className="absolute inset-0 bg-black/60 animate-fade" onClick={onClose} />
+      <div className="relative bg-card rounded-t-3xl max-h-[92dvh] flex flex-col animate-sheet">
         <div className="flex items-center justify-between px-5 pt-3 pb-2">
           <button type="button" onClick={onClose} className="h-11 text-[16px] text-ink-3 font-medium">
             닫기
