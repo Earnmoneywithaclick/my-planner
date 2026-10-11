@@ -20,11 +20,11 @@ export function TaskSheet({ initial, onClose }: { initial: Partial<Task>; onClos
     onClose()
   }
 
+  // 할 일은 묻지 않고 바로 지운다
   async function remove() {
-    if (t.id != null && confirm('이 할 일을 삭제할까요?')) {
-      await db.tasks.delete(t.id)
-      onClose()
-    }
+    if (t.id == null) return
+    await db.tasks.delete(t.id)
+    onClose()
   }
 
   const today = todayKey()
