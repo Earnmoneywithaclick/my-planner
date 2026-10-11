@@ -127,3 +127,9 @@ input[type='time'] {
     columns: 3;
   }
 }
+@media (min-width: 768px) {
+  /* 2단 배치에서도 전체 폭을 쓰는 카드 (달력) */
+  .board > .span-all {
+    column-span: all;
+  }
+}

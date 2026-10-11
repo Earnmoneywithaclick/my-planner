@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { addDays, startOfWeek } from 'date-fns'
 import { db, type PlanEvent, type TimetableBlock } from '../db'
-import { WEEKDAYS, WEEK_ORDER, fmt, friendlyDate, fromKey, nowHHmm, shiftKey, shortTime, toKey } from '../lib/date'
+import { WEEKDAYS, WEEK_ORDER, fmt, friendlyDate, fromKey, nowHHmm, shiftKey, shortTime } from '../lib/date'
 import { type AgendaItem, useAgenda, useNow } from '../lib/hooks'
 import { Card, IconButton, PageHeader, SectionTitle, Segmented } from '../components/ui'
-import { ChevronLeft, ChevronRight, PlusIcon } from '../components/icons'
+import { PlusIcon } from '../components/icons'
 import { AgendaList } from '../components/AgendaList'
+import { MonthCalendar } from '../components/MonthCalendar'
 import { BlockSheet, EventSheet } from '../components/ScheduleSheets'
 
 type Mode = 'day' | 'week'
@@ -70,41 +70,11 @@ function DayView({
   onEvent: (e: Partial<PlanEvent>) => void
 }) {
   const agenda = useAgenda(selected)
-  const weekStart = startOfWeek(fromKey(selected), { weekStartsOn: 1 })
-  const days = Array.from({ length: 7 }, (_, i) => toKey(addDays(weekStart, i)))
-  const eventDays = useLiveQuery(async () => new Set(await db.events.where('date').between(days[0], days[6], true, true).keys()), [days[0]])
   const upcoming = useLiveQuery(() => db.events.where('date').between(shiftKey(today, 1), shiftKey(today, 60), true, true).sortBy('date'), [today])
 
   return (
     <div className="board">
-      <Card className="!px-2 !py-3">
-        <div className="flex items-center justify-between px-1 mb-1">
-          <IconButton label="이전 주" onClick={() => onSelect(shiftKey(selected, -7))}>
-            <ChevronLeft />
-          </IconButton>
-          <button type="button" onClick={() => onSelect(today)} className="text-[17px] font-bold h-11">
-            {fmt(days[0], 'yyyy년 M월')}
-          </button>
-          <IconButton label="다음 주" onClick={() => onSelect(shiftKey(selected, 7))}>
-            <ChevronRight />
-          </IconButton>
-        </div>
-        <div className="grid grid-cols-7">
-          {days.map((d) => {
-            const isSel = d === selected
-            const wd = fromKey(d).getDay()
-            return (
-              <button key={d} type="button" onClick={() => onSelect(d)} aria-label={fmt(d, 'M월 d일 EEEE')} aria-pressed={isSel} className="flex flex-col items-center gap-1 py-1">
-                <span className={`text-[15px] font-semibold ${wd === 0 ? 'text-danger' : 'text-ink-3'}`}>{WEEKDAYS[wd]}</span>
-                <span className={`size-10 grid place-items-center rounded-full text-[17px] font-semibold tabular-nums ${isSel ? 'bg-accent text-bg' : d === today ? 'text-accent' : ''}`}>
-                  {fromKey(d).getDate()}
-                </span>
-                <span className={`size-1.5 rounded-full ${eventDays?.has(d) ? 'bg-gold' : 'bg-transparent'}`} />
-              </button>
-            )
-          })}
-        </div>
-      </Card>
+      <MonthCalendar today={today} selected={selected} onSelect={onSelect} />
       <Card>
         <SectionTitle>{friendlyDate(selected)}</SectionTitle>
         <AgendaList items={agenda} now={selected === today ? nowHHmm() : undefined} onOpen={(it) => (it.kind === 'block' ? onBlock(it.block) : onEvent(it.event))} />
