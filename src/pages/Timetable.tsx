@@ -7,6 +7,7 @@ import { Card, IconButton, PageHeader, SectionTitle, Segmented } from '../compon
 import { PlusIcon } from '../components/icons'
 import { AgendaList } from '../components/AgendaList'
 import { MonthCalendar } from '../components/MonthCalendar'
+import { AnimatedList, FlashLi } from '../components/Animated'
 import { BlockSheet, EventSheet } from '../components/ScheduleSheets'
 
 type Mode = 'day' | 'week'
@@ -82,9 +83,9 @@ function DayView({
       {!!upcoming?.length && (
         <Card>
           <SectionTitle>다가오는 일정</SectionTitle>
-          <ul className="divide-y divide-line">
+          <AnimatedList className="divide-y divide-line">
             {upcoming.slice(0, 20).map((e) => (
-              <li key={e.id}>
+              <FlashLi key={e.id} signal={`${e.title}|${e.date}|${e.start}|${e.color}`}>
                 <button type="button" onClick={() => onEvent(e)} className="w-full flex items-center gap-3 py-3 text-left">
                   <span className="w-1 self-stretch rounded-full" style={{ background: e.color }} />
                   <span className="flex-1 min-w-0 text-[17px] truncate">{e.title}</span>
@@ -93,9 +94,9 @@ function DayView({
                     {e.start && ` ${shortTime(e.start)}`}
                   </span>
                 </button>
-              </li>
+              </FlashLi>
             ))}
-          </ul>
+          </AnimatedList>
         </Card>
       )}
     </div>

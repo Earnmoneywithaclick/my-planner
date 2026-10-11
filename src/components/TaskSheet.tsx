@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { COLORS, db, newId, type Task } from '../db'
 import { Button, CheckCircle, PRIORITY_LABEL, Segmented, Select, Sheet, TextArea, TextInput } from './ui'
 import { todayKey, shiftKey } from '../lib/date'
+import { FlashLi } from './Animated'
 
 export function TaskSheet({ initial, onClose }: { initial: Partial<Task>; onClose: () => void }) {
   const [t, setT] = useState<Partial<Task>>({ priority: 1, ...initial })
@@ -138,7 +139,7 @@ export function TaskRow({ task, goalColor, onOpen }: { task: Task; goalColor?: s
   const overdue = !task.done && !!task.dueDate && task.dueDate < todayKey()
   const toggle = () => db.tasks.update(task.id!, task.done ? { done: 0, doneAt: undefined } : { done: 1, doneAt: Date.now() })
   return (
-    <li className="flex items-center gap-3 py-3">
+    <FlashLi signal={`${task.title}|${task.priority}|${task.dueDate}|${goalColor}`} className="flex items-center gap-3 py-3">
       <CheckCircle checked={!!task.done} onChange={toggle} color={goalColor} label={`${task.title} 완료`} />
       <button type="button" onClick={onOpen} className="flex-1 min-w-0 text-left">
         <p className={`text-[17px] leading-snug ${task.done ? 'line-through text-ink-3' : overdue ? 'text-danger' : ''}`}>
@@ -146,6 +147,6 @@ export function TaskRow({ task, goalColor, onOpen }: { task: Task; goalColor?: s
           {task.title}
         </p>
       </button>
-    </li>
+    </FlashLi>
   )
 }

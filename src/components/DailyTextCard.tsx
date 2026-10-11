@@ -5,6 +5,7 @@ import { db, dayId, type DailyText } from '../db'
 import { dailyTextUrl, fromKey, shiftKey, toKey } from '../lib/date'
 import { Card, TextArea } from './ui'
 import { BookIcon, CheckIcon, ExternalIcon, FlameIcon } from './icons'
+import { useChanged } from '../lib/motion'
 
 async function patchDaily(date: string, patch: Partial<DailyText>) {
   const id = dayId(date)
@@ -25,6 +26,7 @@ function streakOf(readDays: Set<string>, today: string) {
 
 /** 오늘 했는지 체크하는 버튼 (기도 · 개인 연구) */
 function DailyCheck({ label, checked, onToggle }: { label: string; checked: boolean; onToggle: () => void }) {
+  const popped = useChanged(checked, 350)
   return (
     <button
       type="button"
@@ -33,7 +35,7 @@ function DailyCheck({ label, checked, onToggle }: { label: string; checked: bool
       onClick={onToggle}
       className={`flex-1 h-12 rounded-xl font-semibold text-[16px] flex items-center justify-center gap-2 active:opacity-70 ${checked ? 'bg-accent text-bg' : 'bg-card-2 text-ink-2'}`}
     >
-      <span className={`size-[22px] rounded-full border-2 grid place-items-center ${checked ? 'border-bg' : 'border-ink-3'}`}>
+      <span className={`size-[22px] rounded-full border-2 grid place-items-center ${checked ? 'border-bg' : 'border-ink-3'} ${popped && checked ? 'animate-pop' : ''}`}>
         {checked && <CheckIcon width={14} height={14} strokeWidth={3} />}
       </span>
       {label}
@@ -54,6 +56,7 @@ export function DailyTextCard({ date }: { date: string }) {
 
   const readSet = new Set(readKeys ?? [])
   const isRead = rec?.read === 1
+  const readPopped = useChanged(isRead, 350)
   const streak = streakOf(readSet, date)
   const memoValue = memo ?? rec?.memo ?? ''
 
@@ -95,7 +98,7 @@ export function DailyTextCard({ date }: { date: string }) {
             aria-pressed={isRead}
             className={`h-12 px-4 rounded-xl font-semibold text-[16px] flex items-center gap-1.5 active:opacity-70 ${isRead ? 'bg-accent text-bg' : 'bg-card text-ink-2'}`}
           >
-            {isRead && <CheckIcon width={18} height={18} strokeWidth={2.6} />}
+            {isRead && <CheckIcon width={18} height={18} strokeWidth={2.6} className={readPopped ? 'animate-pop' : ''} />}
             {isRead ? '읽었어요' : '읽음'}
           </button>
         </div>

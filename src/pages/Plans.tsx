@@ -5,6 +5,7 @@ import { Button, Card, Chip, IconButton, PageHeader, Sheet, TextArea, TextInput 
 import { CategoryPicker } from '../components/Categories'
 import { PlusIcon } from '../components/icons'
 import { TaskRow, TaskSheet } from '../components/TaskSheet'
+import { AnimatedDiv, AnimatedList, FlashBox } from '../components/Animated'
 
 const STATUS_LABEL: Record<Goal['status'], string> = { active: '진행 중', paused: '멈춤', done: '이룸' }
 
@@ -45,12 +46,13 @@ export default function Plans() {
           이룸 · 멈춤
         </Chip>
       </div>
-      <div className="gutter board board-3">
+      <AnimatedDiv className="gutter board board-3">
         {goals.map((g) => {
           const s = data?.stats.get(g.id!) ?? { done: 0, total: 0 }
           const pct = s.total ? Math.round((s.done / s.total) * 100) : 0
           return (
-            <button key={g.id} type="button" onClick={() => setOpenId(g.id!)} className="block w-full text-left">
+            <FlashBox key={g.id} signal={`${g.title}|${g.color}|${g.status}|${s.done}/${s.total}`}>
+            <button type="button" onClick={() => setOpenId(g.id!)} className="block w-full text-left">
               <Card className="active:opacity-80">
                 <div className="flex items-center gap-3">
                   <span className="size-3.5 rounded-full shrink-0" style={{ background: g.color }} />
@@ -63,9 +65,10 @@ export default function Plans() {
                 )}
               </Card>
             </button>
+            </FlashBox>
           )
         })}
-      </div>
+      </AnimatedDiv>
       {edit && <GoalEditSheet initial={edit} onClose={() => setEdit(null)} />}
       {openId != null && <GoalDetailSheet id={openId} onClose={() => setOpenId(null)} />}
     </>
@@ -178,11 +181,11 @@ function GoalDetailSheet({ id, onClose }: { id: string; onClose: () => void }) {
           <PlusIcon />
         </Button>
       </form>
-      <ul className="divide-y divide-line">
+      <AnimatedList className="divide-y divide-line">
         {sorted.map((t) => (
           <TaskRow key={t.id} task={t} goalColor={goal.color} onOpen={() => setTaskEdit(t)} />
         ))}
-      </ul>
+      </AnimatedList>
     </Sheet>
   )
 }

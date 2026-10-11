@@ -11,6 +11,7 @@ import { AgendaList } from '../components/AgendaList'
 import { TaskRow, TaskSheet } from '../components/TaskSheet'
 import { BlockSheet, EventSheet } from '../components/ScheduleSheets'
 import { QuestionSheet, saveAnswer } from '../components/QuestionSheet'
+import { AnimatedList } from '../components/Animated'
 
 export default function Today() {
   const { today } = useNow()
@@ -90,12 +91,12 @@ function TodayTasks({ today, onOpen }: { today: string; onOpen: (t: Partial<Task
           <PlusIcon />
         </Button>
       </form>
-      {!!data?.tasks.length && (
-        <ul className="divide-y divide-line mt-1">
+      {data && (
+        <AnimatedList className="divide-y divide-line mt-1">
           {data.tasks.map((t) => (
             <TaskRow key={t.id} task={t} goalColor={t.goalId != null ? data.goals.get(t.goalId)?.color : undefined} onOpen={() => onOpen(t)} />
           ))}
-        </ul>
+        </AnimatedList>
       )}
     </Card>
   )
@@ -138,7 +139,7 @@ function TodayQuestion({ today }: { today: string }) {
       {data.answered.length > 0 ? (
         <div className="mt-3 space-y-2">
           {data.answered.map((t, i) => (
-            <p key={i} className="bg-card-2 rounded-xl p-3.5 text-[16px] whitespace-pre-wrap leading-relaxed">
+            <p key={i} className="bg-card-2 rounded-xl p-3.5 text-[16px] whitespace-pre-wrap leading-relaxed animate-fade">
               {t}
             </p>
           ))}

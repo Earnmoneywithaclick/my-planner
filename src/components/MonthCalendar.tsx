@@ -6,6 +6,7 @@ import { WEEKDAYS, WEEK_ORDER, fmt, fromKey, toKey } from '../lib/date'
 import { Card, IconButton } from './ui'
 import { ChevronLeft, ChevronRight } from './icons'
 import { CategoryLegend } from './Categories'
+import { AnimatedSpan } from './Animated'
 
 const MAX_PER_DAY = 6
 const DOUBLE_TAP_MS = 400
@@ -152,13 +153,11 @@ export function MonthCalendar({ today, selected, onSelect, onAdd }: { today: str
               >
                 {fromKey(d).getDate()}
               </span>
-              {items.length > 0 && (
-                <span className="flex flex-wrap justify-center gap-[4px] px-1 pt-0.5">
-                  {items.slice(0, MAX_PER_DAY).map((it) => (
-                    <span key={it.key} className="size-[9px] md:size-[11px] rounded-full" style={{ background: it.color }} />
-                  ))}
-                </span>
-              )}
+              <AnimatedSpan className="flex flex-wrap justify-center gap-[4px] px-1 pt-0.5">
+                {items.slice(0, MAX_PER_DAY).map((it) => (
+                  <span key={it.key} className="size-[9px] md:size-[11px] rounded-full transition-colors" style={{ background: it.color }} />
+                ))}
+              </AnimatedSpan>
             </button>
           )
         })}

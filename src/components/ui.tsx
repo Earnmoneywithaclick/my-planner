@@ -1,5 +1,6 @@
-import { useEffect, type ReactNode, type InputHTMLAttributes, type TextareaHTMLAttributes, type ButtonHTMLAttributes, type SelectHTMLAttributes } from 'react'
+import { useEffect, useLayoutEffect, useRef, type ReactNode, type InputHTMLAttributes, type TextareaHTMLAttributes, type ButtonHTMLAttributes, type SelectHTMLAttributes } from 'react'
 import { CheckIcon } from './icons'
+import { useChanged } from '../lib/motion'
 
 // 글자는 15px 미만으로 쓰지 않는다 — 보조 설명 글은 넣지 않고 꼭 필요한 정보만 보여준다.
 
@@ -83,10 +84,11 @@ export function Chip({ active, children, onClick }: { active?: boolean; children
 }
 
 export function CheckCircle({ checked, onChange, color, label }: { checked: boolean; onChange: () => void; color?: string; label: string }) {
+  const popped = useChanged(checked, 350)
   return (
     <button type="button" role="checkbox" aria-checked={checked} aria-label={label} onClick={onChange} className="size-11 -m-2 grid place-items-center shrink-0">
       <span
-        className="size-6 rounded-full border-2 grid place-items-center transition-colors"
+        className={`size-6 rounded-full border-2 grid place-items-center transition-colors ${popped && checked ? 'animate-pop' : ''}`}
         style={{ borderColor: color ?? 'var(--ink-3)', background: checked ? (color ?? 'var(--accent)') : 'transparent' }}
       >
         {checked && <CheckIcon width={15} height={15} strokeWidth={3} className="text-bg" />}
@@ -108,9 +110,26 @@ export function Sheet({ open, title, onClose, children, footer }: { open: boolea
     }
   }, [open, onClose])
 
+  // 시트는 부모가 바로 없애 버리므로, 사라지기 직전 모습을 복사해 아래로 내려가는 효과만 보여 준다
+  const rootRef = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const root = rootRef.current
+    return () => {
+      if (!root || matchMedia('(prefers-reduced-motion: reduce)').matches) return
+      const ghost = root.cloneNode(true) as HTMLElement
+      ghost.removeAttribute('role')
+      ghost.setAttribute('aria-hidden', 'true')
+      ghost.style.pointerEvents = 'none'
+      ghost.children[0]?.classList.replace('animate-fade', 'animate-fade-out')
+      ghost.children[1]?.classList.replace('animate-sheet', 'animate-sheet-out')
+      document.body.appendChild(ghost)
+      setTimeout(() => ghost.remove(), 260)
+    }
+  }, [open])
+
   if (!open) return null
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end" role="dialog" aria-modal="true" aria-label={title}>
+    <div ref={rootRef} className="fixed inset-0 z-50 flex flex-col justify-end" role="dialog" aria-modal="true" aria-label={title}>
       <div className="absolute inset-0 bg-black/60 animate-fade" onClick={onClose} />
       <div className="relative w-full md:max-w-xl md:mx-auto bg-card rounded-t-3xl max-h-[92dvh] flex flex-col animate-sheet">
         <div className="flex items-center justify-between px-5 pt-3 pb-2">

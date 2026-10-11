@@ -98,6 +98,81 @@ input[type='time'] {
   animation: fade-in 0.2s ease-out;
 }
 
+/* 고친 항목 반짝임 */
+@keyframes flash {
+  from {
+    background-color: var(--accent-soft);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+.animate-flash {
+  animation: flash 0.7s ease-out;
+  border-radius: 12px;
+}
+/* 고친 카드 테두리 빛남 */
+@keyframes ring {
+  from {
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+  to {
+    box-shadow: 0 0 0 2px transparent;
+  }
+}
+.animate-ring {
+  animation: ring 0.8s ease-out;
+}
+/* 체크할 때 톡 튀기 */
+@keyframes pop {
+  0% {
+    transform: scale(0.85);
+  }
+  55% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.animate-pop {
+  animation: pop 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* 입력 시트가 닫힐 때 */
+@keyframes sheet-down {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+.animate-sheet-out {
+  animation: sheet-down 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+.animate-fade-out {
+  animation: fade-out 0.22s ease-in forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-flash,
+  .animate-ring,
+  .animate-pop,
+  .animate-sheet,
+  .animate-fade,
+  .animate-sheet-out,
+  .animate-fade-out {
+    animation: none;
+  }
+}
+
 /* 달력 넘길 때 */
 @keyframes month-next {
   from {

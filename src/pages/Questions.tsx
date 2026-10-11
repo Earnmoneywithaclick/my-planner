@@ -6,6 +6,7 @@ import { useNow } from '../lib/hooks'
 import { Card, Chip, IconButton, PageHeader, Segmented } from '../components/ui'
 import { PinIcon, PlusIcon } from '../components/icons'
 import { CATEGORIES, QuestionSheet } from '../components/QuestionSheet'
+import { AnimatedDiv, AnimatedList, FlashLi } from '../components/Animated'
 
 export default function Questions() {
   const { today } = useNow()
@@ -62,17 +63,17 @@ export default function Questions() {
           {list.length > 0 && (
             <div className="gutter">
               <Card className="!py-1">
-                <ul className="divide-y divide-line">
+                <AnimatedList className="divide-y divide-line">
                   {list.map((q) => (
-                    <li key={q.id}>
+                    <FlashLi key={q.id} signal={`${q.text}|${q.pinned}|${q.nextReview}|${q.category}`}>
                       <button type="button" onClick={() => setOpen(q)} className="w-full text-left py-3.5 flex items-center gap-3">
                         {isDue(q) && <span className="size-2.5 rounded-full bg-gold shrink-0" aria-label="다시 볼 때" />}
                         <span className="flex-1 min-w-0 text-[17px] leading-snug">{q.text}</span>
                         {q.pinned === 1 && <PinIcon width={18} height={18} className="text-accent shrink-0" />}
                       </button>
-                    </li>
+                    </FlashLi>
                   ))}
-                </ul>
+                </AnimatedList>
               </Card>
             </div>
           )}
@@ -98,7 +99,7 @@ function AnswerLog({ data, onOpen }: { data: { answers: Answer[]; byId: Map<stri
   }
 
   return (
-    <div className="gutter board">
+    <AnimatedDiv className="gutter board">
       {groups.map((g) => (
         <section key={g.date}>
           <h2 className="text-[17px] font-bold px-1 mb-2">{fmt(g.date, 'M월 d일 (E)')}</h2>
@@ -117,6 +118,6 @@ function AnswerLog({ data, onOpen }: { data: { answers: Answer[]; byId: Map<stri
           </div>
         </section>
       ))}
-    </div>
+    </AnimatedDiv>
   )
 }

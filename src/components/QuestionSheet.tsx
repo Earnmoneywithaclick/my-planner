@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db, newId, type Question } from '../db'
 import { shiftKey, todayKey } from '../lib/date'
 import { Button, Chip, Sheet, TextArea } from './ui'
+import { AnimatedDiv } from './Animated'
 
 export const CATEGORIES = ['하루 돌아보기', '우선순위', '목표', '나 자신', '관계', '영적인 것', '기타']
 
@@ -127,11 +128,13 @@ export function QuestionSheet({ initial, onClose }: { initial: Partial<Question>
         답 저장
       </Button>
       <ReviewButtons q={q} />
-      {answers?.map((a) => (
-        <p key={a.id} className="bg-card-2 rounded-xl p-3.5 text-[16px] whitespace-pre-wrap leading-relaxed">
-          {a.text}
-        </p>
-      ))}
+      <AnimatedDiv className="space-y-4">
+        {answers?.map((a) => (
+          <p key={a.id} className="bg-card-2 rounded-xl p-3.5 text-[16px] whitespace-pre-wrap leading-relaxed">
+            {a.text}
+          </p>
+        ))}
+      </AnimatedDiv>
     </Sheet>
   )
 }

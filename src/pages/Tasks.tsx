@@ -6,6 +6,7 @@ import { useNow } from '../lib/hooks'
 import { Card, Chip, IconButton, PageHeader } from '../components/ui'
 import { ChevronRight, ListPlusIcon, PlusIcon } from '../components/icons'
 import { BulkTaskSheet, TaskRow, TaskSheet } from '../components/TaskSheet'
+import { AnimatedDiv, AnimatedList } from '../components/Animated'
 
 // 접어 둔 카드는 이 기기에만 기억한다
 const COLLAPSED_KEY = 'planner.tasks.collapsed'
@@ -74,7 +75,7 @@ export default function Tasks() {
           </Chip>
         ))}
       </div>
-      <div className="gutter board board-3">
+      <AnimatedDiv className="gutter board board-3">
         {groups.map((g) => {
           const open = !collapsed.has(g.label)
           return (
@@ -94,16 +95,16 @@ export default function Tasks() {
                 )}
               </div>
               {open && (
-                <ul className="divide-y divide-line mt-1">
+                <AnimatedList className="divide-y divide-line mt-1">
                   {g.items.map((t) => (
                     <TaskRow key={t.id} task={t} goalColor={t.goalId != null ? data?.goals.get(t.goalId)?.color : undefined} onOpen={() => setEdit(t)} />
                   ))}
-                </ul>
+                </AnimatedList>
               )}
             </Card>
           )
         })}
-      </div>
+      </AnimatedDiv>
       {edit && <TaskSheet initial={edit} onClose={() => setEdit(null)} />}
       {bulk !== null && <BulkTaskSheet existingGroup={bulk || undefined} onClose={() => setBulk(null)} />}
     </>
