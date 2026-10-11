@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import { useObservable } from 'dexie-react-hooks'
 import { db, replaceAll, TABLES } from '../db'
 import { todayKey } from '../lib/date'
-import { Button, Card, PageHeader, SectionTitle } from '../components/ui'
+import { Button, Card, PageHeader, SectionTitle, TextInput } from '../components/ui'
+import { renameCategory, useCategories } from '../components/Categories'
 import { ChevronLeft } from '../components/icons'
 
 const BACKUP_APP = 'my-planner'
@@ -90,6 +91,31 @@ function SyncCard() {
   )
 }
 
+/** 색마다 카테고리 이름 바꾸기 — 입력칸에서 나가면 저장 (비우면 기본 이름으로) */
+function CategoryCard() {
+  const categories = useCategories()
+  return (
+    <Card>
+      <SectionTitle>카테고리</SectionTitle>
+      <ul className="space-y-2">
+        {categories.map((c) => (
+          <li key={c.color} className="flex items-center gap-3">
+            <span className="size-5 rounded-full shrink-0" style={{ background: c.color }} />
+            <TextInput
+              key={c.name}
+              aria-label="카테고리 이름"
+              defaultValue={c.name}
+              enterKeyHint="done"
+              onBlur={(e) => e.target.value !== c.name && renameCategory(c.color, e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+            />
+          </li>
+        ))}
+      </ul>
+    </Card>
+  )
+}
+
 export default function Settings() {
   const [msg, setMsg] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
@@ -107,6 +133,8 @@ export default function Settings() {
       />
       <div className="gutter board">
         <SyncCard />
+
+        <CategoryCard />
 
         <Card>
           <SectionTitle>백업</SectionTitle>

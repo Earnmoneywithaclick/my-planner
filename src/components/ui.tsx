@@ -1,5 +1,4 @@
 import { useEffect, type ReactNode, type InputHTMLAttributes, type TextareaHTMLAttributes, type ButtonHTMLAttributes, type SelectHTMLAttributes } from 'react'
-import { COLORS } from '../db'
 import { CheckIcon } from './icons'
 
 // 글자는 15px 미만으로 쓰지 않는다 — 보조 설명 글은 넣지 않고 꼭 필요한 정보만 보여준다.
@@ -80,23 +79,6 @@ export function Chip({ active, children, onClick }: { active?: boolean; children
     >
       {children}
     </button>
-  )
-}
-
-export function ColorPicker({ value, onChange }: { value: string; onChange: (c: string) => void }) {
-  return (
-    <div className="flex flex-wrap gap-3">
-      {COLORS.map((c) => (
-        <button
-          key={c}
-          type="button"
-          aria-label={`색상 ${c}`}
-          onClick={() => onChange(c)}
-          className="size-9 rounded-full"
-          style={{ background: c, boxShadow: value === c ? `0 0 0 2px var(--bg), 0 0 0 4px ${c}` : undefined }}
-        />
-      ))}
-    </div>
   )
 }
 

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { COLORS, db, newId, type PlanEvent, type TimetableBlock } from '../db'
 import { TIME_SLOTS, WEEKDAYS, WEEK_ORDER, timeLabel } from '../lib/date'
-import { Button, ColorPicker, Select, Sheet, TextArea, TextInput } from './ui'
+import { Button, Select, Sheet, TextArea, TextInput } from './ui'
+import { CategoryPicker } from './Categories'
 
 /** 30분 단위 시간 고르기. 예전에 저장한 다른 값이 있으면 그 값도 목록에 넣는다. */
 function TimeSelect({ value, onChange, emptyLabel, after, label }: { value?: string; onChange: (v?: string) => void; emptyLabel?: string; after?: string; label: string }) {
@@ -70,7 +71,7 @@ function Footer({ isNew, valid, onSave, onRemove }: { isNew: boolean; valid: boo
 
 /** 요일마다 반복되는 시간표 칸 */
 export function BlockSheet({ initial, onClose }: { initial: Partial<TimetableBlock>; onClose: () => void }) {
-  const [b, setB] = useState<Partial<TimetableBlock>>({ color: COLORS[1], start: '09:00', ...initial })
+  const [b, setB] = useState<Partial<TimetableBlock>>({ color: COLORS[4], start: '09:00', ...initial })
   const isNew = b.id == null
   const [days, setDays] = useState<number[]>(initial.weekday != null ? [initial.weekday] : [1])
   const set = (patch: Partial<TimetableBlock>) => setB((p) => ({ ...p, ...patch }))
@@ -100,14 +101,14 @@ export function BlockSheet({ initial, onClose }: { initial: Partial<TimetableBlo
       <WeekdayPicker days={days} onToggle={toggleDay} />
       <TimeRange start={b.start} end={b.end} onChange={set} />
       <TextInput placeholder="장소" value={b.place ?? ''} onChange={(e) => set({ place: e.target.value })} />
-      <ColorPicker value={b.color!} onChange={(color) => set({ color })} />
+      <CategoryPicker value={b.color!} onChange={(color) => set({ color })} />
     </Sheet>
   )
 }
 
 /** 특정 날짜의 일정 — 시작 시간을 비우면 하루 종일 */
 export function EventSheet({ initial, onClose }: { initial: Partial<PlanEvent>; onClose: () => void }) {
-  const [ev, setEv] = useState<Partial<PlanEvent>>({ color: COLORS[2], ...initial })
+  const [ev, setEv] = useState<Partial<PlanEvent>>({ color: COLORS[3], ...initial })
   const isNew = ev.id == null
   const set = (patch: Partial<PlanEvent>) => setEv((p) => ({ ...p, ...patch }))
   const valid = !!ev.title?.trim() && !!ev.date
@@ -140,7 +141,7 @@ export function EventSheet({ initial, onClose }: { initial: Partial<PlanEvent>; 
       <TextInput type="date" aria-label="날짜" value={ev.date ?? ''} onChange={(e) => set({ date: e.target.value })} />
       <TimeRange start={ev.start} end={ev.end} onChange={set} startEmptyLabel="하루 종일" />
       <TextArea placeholder="메모" value={ev.note ?? ''} onChange={(e) => set({ note: e.target.value })} />
-      <ColorPicker value={ev.color!} onChange={(color) => set({ color })} />
+      <CategoryPicker value={ev.color!} onChange={(color) => set({ color })} />
     </Sheet>
   )
 }

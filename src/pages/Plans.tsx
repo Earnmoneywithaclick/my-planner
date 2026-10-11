@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { COLORS, db, newId, type Goal, type Task } from '../db'
-import { Button, Card, Chip, ColorPicker, IconButton, PageHeader, Sheet, TextArea, TextInput } from '../components/ui'
+import { Button, Card, Chip, IconButton, PageHeader, Sheet, TextArea, TextInput } from '../components/ui'
+import { CategoryPicker } from '../components/Categories'
 import { PlusIcon } from '../components/icons'
 import { TaskRow, TaskSheet } from '../components/TaskSheet'
 
@@ -111,7 +112,7 @@ function GoalEditSheet({ initial, onClose }: { initial: Partial<Goal>; onClose: 
           ))}
         </div>
       )}
-      <ColorPicker value={g.color!} onChange={(color) => set({ color })} />
+      <CategoryPicker value={g.color!} onChange={(color) => set({ color })} />
     </Sheet>
   )
 }

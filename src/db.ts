@@ -78,6 +78,13 @@ export interface DailyText {
   updatedAt: number
 }
 
+/** 색마다 붙는 카테고리 이름. 사용자가 이름을 바꾼 색만 저장한다. 일정·시간표·계획은 color 로 카테고리를 가리킨다. */
+export interface Category {
+  id: string // categoryId(color)
+  color: string
+  name: string
+}
+
 export const newId = () => crypto.randomUUID()
 
 export const db = new Dexie('planner-sync', { addons: [dexieCloud] }) as Dexie & {
@@ -88,6 +95,7 @@ export const db = new Dexie('planner-sync', { addons: [dexieCloud] }) as Dexie &
   questions: Table<Question, string>
   answers: Table<Answer, string>
   days: Table<DailyText, string>
+  categories: Table<Category, string>
   /** 예전 일일 기록 표(날짜가 기본 키). Dexie Cloud 의 id 는 모든 계정에서 유일해야 해서 days 로 옮겼다. */
   dailyText: Table<Omit<DailyText, 'id'>, string>
 }
@@ -102,19 +110,24 @@ db.version(1).stores({
   dailyText: 'date, read',
 })
 db.version(2).stores({ days: 'id, date, read' })
+db.version(3).stores({ categories: 'id, color' })
 
 // 로그인해야 쓸 수 있다 — 처음 열 때 이메일 인증 화면이 뜬다.
 // 개발 중에는 ?demo=<데모 사용자> 로 열면 Dexie Cloud 데모 계정으로 바로 로그인한다 (배포 빌드에는 들어가지 않음).
 const demoUser = import.meta.env.DEV ? new URLSearchParams(location.search).get('demo') : null
 db.cloud.configure({ databaseUrl: DATABASE_URL, requireAuth: demoUser ? { grant_type: 'demo', userId: demoUser } : true, customLoginGui: true, socialAuth: false })
 
-export const TABLES = ['goals', 'tasks', 'events', 'timetable', 'questions', 'answers', 'days'] as const
+export const TABLES = ['goals', 'tasks', 'events', 'timetable', 'questions', 'answers', 'days', 'categories'] as const
 const LEGACY_TABLES = ['goals', 'tasks', 'events', 'timetable', 'questions', 'answers', 'dailyText'] as const
 
 /** 날짜별 기록(성구·기도·연구)의 id. 날짜만 쓰면 다른 계정과 겹쳐 서버가 거절하므로 계정 id 를 붙인다. */
 export const dayId = (date: string) => `day-${date}-${db.cloud.currentUserId}`
+/** 카테고리 이름 기록의 id (색 + 계정) */
+export const categoryId = (color: string) => `cat-${color.replace('#', '')}-${db.cloud.currentUserId}`
 
 export const COLORS = ['#2f5d50', '#3b6ea5', '#b5543c', '#c58a1c', '#7a5aa6', '#4f8a3c', '#a2456e', '#5f6b73']
+/** COLORS 순서와 같은 기본 카테고리 이름 */
+export const DEFAULT_CATEGORY_NAMES = ['영적 활동', '집회', '중요', '약속', '개인', '운동·건강', '가족', '기타']
 
 const DEFAULT_QUESTIONS: [string, string][] = [
   ['오늘 가장 감사했던 일은 무엇인가?', '하루 돌아보기'],
@@ -222,6 +235,7 @@ export function normalizeRows(rows: Rows): Rows {
   out.timetable = (rows.timetable ?? []).map((r) => remap(r))
   // 예전 백업의 dailyText 와 새 days 모두, 지금 계정 기준 id 로 다시 만든다
   out.days = [...(rows.dailyText ?? []), ...(rows.days ?? [])].map((r) => ({ ...strip(r), id: dayId(String(r.date)) }))
+  out.categories = (rows.categories ?? []).map((r) => ({ ...strip(r), id: categoryId(String(r.color)) }))
   return out
 }
 
