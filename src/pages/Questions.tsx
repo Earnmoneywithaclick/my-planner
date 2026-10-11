@@ -36,7 +36,7 @@ export default function Questions() {
           </IconButton>
         }
       />
-      <div className="px-4 pb-3">
+      <div className="gutter pb-3">
         <Segmented
           value={mode}
           onChange={setMode}
@@ -49,7 +49,7 @@ export default function Questions() {
 
       {mode === 'list' ? (
         <>
-          <div className="flex gap-2 overflow-x-auto no-scrollbar px-4 pb-3">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar gutter pb-3">
             <Chip active={!cat} onClick={() => setCat(null)}>
               전체
             </Chip>
@@ -60,7 +60,7 @@ export default function Questions() {
             ))}
           </div>
           {list.length > 0 && (
-            <div className="px-4">
+            <div className="gutter">
               <Card className="!py-1">
                 <ul className="divide-y divide-line">
                   {list.map((q) => (
@@ -98,7 +98,7 @@ function AnswerLog({ data, onOpen }: { data: { answers: Answer[]; byId: Map<stri
   }
 
   return (
-    <div className="px-4 space-y-4">
+    <div className="gutter board">
       {groups.map((g) => (
         <section key={g.date}>
           <h2 className="text-[17px] font-bold px-1 mb-2">{fmt(g.date, 'M월 d일 (E)')}</h2>

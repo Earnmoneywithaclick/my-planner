@@ -6,7 +6,7 @@ import { CheckIcon } from './icons'
 
 export function PageHeader({ title, right }: { title: string; right?: ReactNode }) {
   return (
-    <header className="pt-safe px-5 pb-3 flex items-center justify-between gap-3">
+    <header className="pt-safe px-5 md:px-7 pb-3 flex items-center justify-between gap-3">
       <h1 className="text-[28px] font-bold tracking-tight leading-tight">{title}</h1>
       {right}
     </header>
@@ -56,7 +56,7 @@ export function Select(p: SelectHTMLAttributes<HTMLSelectElement>) {
 
 export function Segmented<T extends string | number>({ value, options, onChange }: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void }) {
   return (
-    <div className="flex bg-card-2 rounded-xl p-1 gap-1">
+    <div className="flex bg-card-2 rounded-xl p-1 gap-1 md:max-w-md">
       {options.map((o) => (
         <button
           key={String(o.value)}
@@ -130,7 +130,7 @@ export function Sheet({ open, title, onClose, children, footer }: { open: boolea
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end" role="dialog" aria-modal="true" aria-label={title}>
       <div className="absolute inset-0 bg-black/60 animate-fade" onClick={onClose} />
-      <div className="relative bg-card rounded-t-3xl max-h-[92dvh] flex flex-col animate-sheet">
+      <div className="relative w-full md:max-w-xl md:mx-auto bg-card rounded-t-3xl max-h-[92dvh] flex flex-col animate-sheet">
         <div className="flex items-center justify-between px-5 pt-3 pb-2">
           <button type="button" onClick={onClose} className="h-11 text-[16px] text-ink-3 font-medium">
             닫기

@@ -29,7 +29,7 @@ export default function Today() {
           </Link>
         }
       />
-      <div className="px-4 space-y-3">
+      <div className="gutter board">
         <DailyTextCard key={today} date={today} />
 
         <Card>

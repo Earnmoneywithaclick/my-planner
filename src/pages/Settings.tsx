@@ -105,7 +105,7 @@ export default function Settings() {
           </Link>
         }
       />
-      <div className="px-4 space-y-3">
+      <div className="gutter board">
         <SyncCard />
 
         <Card>

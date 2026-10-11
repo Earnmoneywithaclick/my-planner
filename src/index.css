@@ -97,3 +97,33 @@ input[type='time'] {
 .animate-fade {
   animation: fade-in 0.2s ease-out;
 }
+
+/* 좌우 여백 — 아이패드에서는 조금 넓게 */
+.gutter {
+  padding-inline: 16px;
+}
+/* 카드 묶음: 아이폰은 한 줄로 쌓고, 아이패드(가로 768px 이상)는 2단, 큰 화면은 board-3 이면 3단 */
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+@media (min-width: 768px) {
+  .gutter {
+    padding-inline: 24px;
+  }
+  .board {
+    display: block;
+    columns: 2;
+    column-gap: 14px;
+  }
+  .board > * {
+    break-inside: avoid;
+    margin-bottom: 14px;
+  }
+}
+@media (min-width: 1200px) {
+  .board-3 {
+    columns: 3;
+  }
+}

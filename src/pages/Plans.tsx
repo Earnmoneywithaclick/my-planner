@@ -36,7 +36,7 @@ export default function Plans() {
           </IconButton>
         }
       />
-      <div className="flex gap-2 px-4 pb-3">
+      <div className="flex gap-2 gutter pb-3">
         <Chip active={show === 'active'} onClick={() => setShow('active')}>
           진행 중
         </Chip>
@@ -44,7 +44,7 @@ export default function Plans() {
           이룸 · 멈춤
         </Chip>
       </div>
-      <div className="px-4 space-y-3">
+      <div className="gutter board board-3">
         {goals.map((g) => {
           const s = data?.stats.get(g.id!) ?? { done: 0, total: 0 }
           const pct = s.total ? Math.round((s.done / s.total) * 100) : 0

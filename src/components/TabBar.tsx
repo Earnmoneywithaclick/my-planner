@@ -12,7 +12,7 @@ const TABS = [
 export function TabBar() {
   return (
     <nav className="fixed bottom-0 inset-x-0 z-40 bg-bg/90 backdrop-blur-xl border-t border-line pb-safe">
-      <ul className="flex max-w-xl mx-auto">
+      <ul className="flex max-w-xl md:max-w-2xl mx-auto">
         {TABS.map(({ to, label, Icon }) => (
           <li key={to} className="flex-1">
             <NavLink

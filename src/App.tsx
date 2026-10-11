@@ -11,7 +11,7 @@ import Settings from './pages/Settings'
 export default function App() {
   return (
     <HashRouter>
-      <main className="max-w-xl mx-auto min-h-dvh pb-[calc(env(safe-area-inset-bottom)+84px)]">
+      <main className="max-w-xl md:max-w-none mx-auto min-h-dvh pb-[calc(env(safe-area-inset-bottom)+84px)]">
         <Routes>
           <Route path="/" element={<Today />} />
           <Route path="/timetable" element={<Timetable />} />

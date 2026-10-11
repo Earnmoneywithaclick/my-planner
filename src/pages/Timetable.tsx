@@ -33,7 +33,7 @@ export default function Timetable() {
           </IconButton>
         }
       />
-      <div className="px-4 pb-3">
+      <div className="gutter pb-3">
         <Segmented
           value={mode}
           onChange={setMode}
@@ -43,7 +43,7 @@ export default function Timetable() {
           ]}
         />
       </div>
-      <div className="px-4 space-y-3">
+      <div className="gutter space-y-3">
         {mode === 'day' ? (
           <DayView today={today} selected={selected} onSelect={setSelected} onBlock={setBlockEdit} onEvent={setEventEdit} />
         ) : (
@@ -76,7 +76,7 @@ function DayView({
   const upcoming = useLiveQuery(() => db.events.where('date').between(shiftKey(today, 1), shiftKey(today, 60), true, true).sortBy('date'), [today])
 
   return (
-    <>
+    <div className="board">
       <Card className="!px-2 !py-3">
         <div className="flex items-center justify-between px-1 mb-1">
           <IconButton label="이전 주" onClick={() => onSelect(shiftKey(selected, -7))}>
@@ -128,7 +128,7 @@ function DayView({
           </ul>
         </Card>
       )}
-    </>
+    </div>
   )
 }
 

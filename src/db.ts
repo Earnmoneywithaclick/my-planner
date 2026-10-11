@@ -123,14 +123,34 @@ const DEFAULT_QUESTIONS: [string, string][] = [
   ['이번 주 영적인 활동에 충분한 시간을 계획했는가?', '영적인 것'],
 ]
 
-// 기본 질문은 기기마다 같은 id 를 써서, 두 기기에서 각각 만들어도 하나로 합쳐지게 한다
-const defaultQuestionId = (i: number) => `qdefault${String(i + 1).padStart(2, '0')}`
+// 기본 질문은 같은 계정이면 기기가 달라도 같은 id 를 써서 하나로 합쳐지게 한다.
+// Dexie Cloud 의 id 는 모든 계정을 통틀어 유일해야 하므로 계정 id 를 붙인다.
+const defaultQuestionId = (i: number) => `qdefault${String(i + 1).padStart(2, '0')}-${db.cloud.currentUserId}`
 
-/** 서버에서 받아온 뒤에도 질문이 하나도 없으면 기본 질문을 넣는다. */
-async function seedIfEmpty() {
-  if ((await db.questions.count()) > 0) return
+/** 이 계정에 기본 질문을 아직 넣은 적이 없으면, 없는 것만 넣는다. */
+async function seedDefaults() {
+  const flag = `planner.defaults.v2:${db.cloud.currentUserId}`
+  try {
+    if (localStorage.getItem(flag)) return
+  } catch {
+    /* 저장소 접근 불가 시에는 매번 확인한다 (있는 질문은 건드리지 않으므로 안전) */
+  }
+  const ids = DEFAULT_QUESTIONS.map((_, i) => defaultQuestionId(i))
+  const existing = await db.questions.bulkGet(ids)
   const now = Date.now()
-  await db.questions.bulkPut(DEFAULT_QUESTIONS.map(([text, category], i) => ({ id: defaultQuestionId(i), text, category, pinned: 0, createdAt: now + i })))
+  const missing = DEFAULT_QUESTIONS.map(([text, category], i) => ({ id: ids[i], text, category, pinned: 0 as const, createdAt: now + i })).filter((_, i) => !existing[i])
+  if (missing.length) await db.questions.bulkAdd(missing)
+  try {
+    localStorage.setItem(flag, '1')
+  } catch {
+    /* 무시 */
+  }
+}
+
+/** 계정 id 가 붙기 전의 기본 질문 id(qdefault01 등)를 가리키는 답을 새 id 로 고친다. */
+async function repairDefaultAnswers() {
+  const old = await db.answers.filter((a) => /^qdefault\d\d$/.test(a.questionId)).toArray()
+  for (const a of old) await db.answers.update(a.id, { questionId: defaultQuestionId(Number(a.questionId.slice(8)) - 1) })
 }
 
 type Rows = Partial<Record<(typeof TABLES)[number], Record<string, unknown>[]>>
@@ -216,16 +236,15 @@ async function migrateLegacyDb() {
   await Dexie.delete('planner')
 }
 
-/** 로그인 → 서버 기록 받아오기 → 옛 기록 옮기기 → 비어 있으면 기본 질문 */
+/** 로그인 → 서버 기록 받아오기 → 옛 기록 옮기기 → 기본 질문 */
 export async function startup() {
   await db.open()
-  try {
-    await db.cloud.sync({ wait: true, purpose: 'pull' })
-  } catch {
-    /* 오프라인이면 다음에 연결될 때 자동으로 동기화된다 */
-  }
+  // 서버 기록을 먼저 받아오되, 첫 로그인 직후에는 이 대기가 끝나지 않는 경우가 있어 최대 8초만 기다린다.
+  // 오프라인이면 다음에 연결될 때 자동으로 동기화된다.
+  await Promise.race([db.cloud.sync({ wait: true, purpose: 'pull' }).catch(() => {}), new Promise((r) => setTimeout(r, 8000))])
   await migrateLegacyDb()
-  await seedIfEmpty()
+  await repairDefaultAnswers()
+  await seedDefaults()
 }
 
 /** 기기가 저장 공간을 임의로 비우지 않도록 요청한다. */

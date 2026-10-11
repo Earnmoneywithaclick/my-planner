@@ -38,14 +38,14 @@ export default function Tasks() {
           </IconButton>
         }
       />
-      <div className="flex gap-2 overflow-x-auto no-scrollbar px-4 pb-3">
+      <div className="flex gap-2 overflow-x-auto no-scrollbar gutter pb-3">
         {FILTERS.map((f) => (
           <Chip key={f.value} active={filter === f.value} onClick={() => setFilter(f.value)}>
             {f.label}
           </Chip>
         ))}
       </div>
-      <div className="px-4 space-y-3">
+      <div className="gutter board board-3">
         {groups.map((g) => (
           <Card key={g.label}>
             <h2 className={`text-[17px] font-bold ${g.danger ? 'text-danger' : ''}`}>{g.label}</h2>
