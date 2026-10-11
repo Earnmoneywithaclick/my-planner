@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { addDays, addMonths, endOfMonth, endOfWeek, startOfMonth, startOfWeek } from 'date-fns'
-import { db } from '../db'
+import { db, type PlanEvent } from '../db'
 import { WEEKDAYS, WEEK_ORDER, fmt, fromKey, toKey } from '../lib/date'
 import { Card, IconButton } from './ui'
 import { ChevronLeft, ChevronRight } from './icons'
@@ -9,13 +9,17 @@ import { CategoryLegend } from './Categories'
 import { AnimatedSpan } from './Animated'
 
 const MAX_PER_DAY = 6
+const MAX_LANES = 3
+
+const isMultiDay = (e: PlanEvent) => !!e.endDate && e.endDate > e.date
 const DOUBLE_TAP_MS = 400
 const LEAVE_MS = 170
 
 type CalItem = { key: string; title: string; color: string; start?: string }
 
 /**
- * 한 달 달력. 날짜 칸마다 그날 일정을 카테고리 색 점으로만 보여주고, 아래에 색 → 카테고리 설명을 단다.
+ * 한 달 달력. 하루짜리 일정은 카테고리 색 점, 며칠 이어지는 일정은 날짜를 가로지르는 색 막대로 보여주고,
+ * 아래에 색 → 카테고리 설명을 단다.
  * 매주 반복 시간표는 매번 찍히면 어지러워서 달력에는 넣지 않는다 (날짜를 고르면 아래 목록에는 나온다).
  * 한 번 탭하면 그 날짜 선택, 같은 날짜를 빠르게 두 번 탭하면 일정 추가.
  */
@@ -45,18 +49,30 @@ export function MonthCalendar({ today, selected, onSelect, onAdd }: { today: str
     const first = days[0]
     const last = days[days.length - 1]
     const events = await db.events.where('date').belowOrEqual(last).filter((e) => (e.endDate ?? e.date) >= first).toArray()
+    // 하루짜리 일정은 그날의 점으로
     const byDate = new Map<string, CalItem[]>()
-    for (const e of events) {
-      // 며칠 이어지는 일정은 걸쳐 있는 날마다 점을 찍는다
-      for (const d of days) {
-        if (d < e.date || d > (e.endDate ?? e.date)) continue
-        byDate.set(d, [...(byDate.get(d) ?? []), { key: e.id, title: e.title, color: e.color, start: d === e.date ? e.start : undefined }])
+    for (const e of events.filter((e) => !isMultiDay(e))) byDate.set(e.date, [...(byDate.get(e.date) ?? []), { key: e.id, title: e.title, color: e.color, start: e.start }])
+
+    // 며칠 이어지는 일정은 한 주(달력 한 줄)마다 줄(lane)을 정해 막대로 잇는다.
+    // 같은 주 안에서는 같은 일정이 늘 같은 높이에 오도록, 겹치지 않는 일정끼리 한 줄을 나눠 쓴다.
+    const lanesByDay = new Map<string, (PlanEvent | null)[]>()
+    const multi = events.filter(isMultiDay).sort((a, b) => a.date.localeCompare(b.date) || b.endDate!.localeCompare(a.endDate!))
+    for (let w = 0; w < days.length; w += 7) {
+      const week = days.slice(w, w + 7)
+      const lanes: PlanEvent[][] = []
+      for (const e of multi) {
+        if (e.date > week[6] || e.endDate! < week[0]) continue
+        const lane = lanes.find((l) => l[l.length - 1].endDate! < e.date)
+        if (lane) lane.push(e)
+        else lanes.push([e])
       }
+      for (const d of week) lanesByDay.set(d, lanes.slice(0, MAX_LANES).map((l) => l.find((e) => e.date <= d && d <= e.endDate!) ?? null))
     }
-    return byDate
+    return { byDate, lanesByDay, events }
   }, [days[0], days[days.length - 1]])
 
-  const itemsOf = (d: string) => [...(data?.get(d) ?? [])].sort((a, b) => (a.start ?? '').localeCompare(b.start ?? ''))
+  const itemsOf = (d: string) => [...(data?.byDate.get(d) ?? [])].sort((a, b) => (a.start ?? '').localeCompare(b.start ?? ''))
+  const monthColors = new Set((data?.events ?? []).filter((e) => e.date <= toKey(endOfMonth(month)) && (e.endDate ?? e.date) >= toKey(month)).map((e) => e.color))
 
   function tap(d: string) {
     const now = Date.now()
@@ -147,12 +163,14 @@ export function MonthCalendar({ today, selected, onSelect, onAdd }: { today: str
           const isSel = d === selected
           const isToday = d === today
           const items = itemsOf(d)
+          const lanes = data?.lanesByDay.get(d) ?? []
+          const titles = [...lanes.filter(Boolean).map((e) => e!.title), ...items.map((i) => i.title)]
           return (
             <button
               key={d}
               type="button"
               onClick={() => tap(d)}
-              aria-label={`${fmt(d, 'M월 d일 EEEE')}${items.length ? `, ${items.map((i) => i.title).join(', ')}` : ''}`}
+              aria-label={`${fmt(d, 'M월 d일 EEEE')}${titles.length ? `, ${titles.join(', ')}` : ''}`}
               aria-pressed={isSel}
               className={`touch-manipulation select-none min-h-[62px] md:min-h-[84px] flex flex-col items-stretch gap-[3px] px-px pt-1 pb-1.5 border-t border-line text-left min-w-0 ${inMonth ? '' : 'opacity-35'} ${isSel ? 'bg-accent-soft rounded-lg' : ''}`}
             >
@@ -161,6 +179,18 @@ export function MonthCalendar({ today, selected, onSelect, onAdd }: { today: str
               >
                 {fromKey(d).getDate()}
               </span>
+              {lanes.map((e, i) =>
+                e ? (
+                  // 막대: 칸 끝까지 이어 붙이고, 시작·마지막 날만 둥글게
+                  <span
+                    key={`${e.id}-${i}`}
+                    className={`block h-[7px] md:h-[9px] -mx-px ${d === e.date ? 'ml-[3px] rounded-l-full' : ''} ${d === e.endDate ? 'mr-[3px] rounded-r-full' : ''}`}
+                    style={{ background: e.color }}
+                  />
+                ) : (
+                  <span key={`empty-${i}`} className="block h-[7px] md:h-[9px]" />
+                ),
+              )}
               <AnimatedSpan className="flex flex-wrap justify-center gap-[4px] px-1 pt-0.5">
                 {items.slice(0, MAX_PER_DAY).map((it) => (
                   <span key={it.key} className="size-[9px] md:size-[11px] rounded-full transition-colors" style={{ background: it.color }} />
@@ -171,7 +201,7 @@ export function MonthCalendar({ today, selected, onSelect, onAdd }: { today: str
         })}
       </div>
       </div>
-      <CategoryLegend colors={new Set(days.filter((d) => d.startsWith(monthKey)).flatMap((d) => itemsOf(d).map((i) => i.color)))} />
+      <CategoryLegend colors={monthColors} />
     </Card>
   )
 }
