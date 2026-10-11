@@ -69,8 +69,11 @@ export interface Answer {
 }
 
 export interface DailyText {
-  date: string // 기본 키 — 날짜가 같으면 기기가 달라도 같은 기록으로 합쳐진다
+  id: string // dayId(date) — 같은 계정·같은 날짜면 기기가 달라도 같은 기록으로 합쳐진다
+  date: string
   read: 0 | 1
+  prayed?: 0 | 1 // 오늘 기도했는지
+  study?: 0 | 1 // 오늘 개인 연구했는지
   memo: string
   updatedAt: number
 }
@@ -84,7 +87,9 @@ export const db = new Dexie('planner-sync', { addons: [dexieCloud] }) as Dexie &
   timetable: Table<TimetableBlock, string>
   questions: Table<Question, string>
   answers: Table<Answer, string>
-  dailyText: Table<DailyText, string>
+  days: Table<DailyText, string>
+  /** 예전 일일 기록 표(날짜가 기본 키). Dexie Cloud 의 id 는 모든 계정에서 유일해야 해서 days 로 옮겼다. */
+  dailyText: Table<Omit<DailyText, 'id'>, string>
 }
 
 db.version(1).stores({
@@ -96,13 +101,18 @@ db.version(1).stores({
   answers: 'id, questionId, date',
   dailyText: 'date, read',
 })
+db.version(2).stores({ days: 'id, date, read' })
 
 // 로그인해야 쓸 수 있다 — 처음 열 때 이메일 인증 화면이 뜬다.
 // 개발 중에는 ?demo=<데모 사용자> 로 열면 Dexie Cloud 데모 계정으로 바로 로그인한다 (배포 빌드에는 들어가지 않음).
 const demoUser = import.meta.env.DEV ? new URLSearchParams(location.search).get('demo') : null
 db.cloud.configure({ databaseUrl: DATABASE_URL, requireAuth: demoUser ? { grant_type: 'demo', userId: demoUser } : true, customLoginGui: true, socialAuth: false })
 
-export const TABLES = ['goals', 'tasks', 'events', 'timetable', 'questions', 'answers', 'dailyText'] as const
+export const TABLES = ['goals', 'tasks', 'events', 'timetable', 'questions', 'answers', 'days'] as const
+const LEGACY_TABLES = ['goals', 'tasks', 'events', 'timetable', 'questions', 'answers', 'dailyText'] as const
+
+/** 날짜별 기록(성구·기도·연구)의 id. 날짜만 쓰면 다른 계정과 겹쳐 서버가 거절하므로 계정 id 를 붙인다. */
+export const dayId = (date: string) => `day-${date}-${db.cloud.currentUserId}`
 
 export const COLORS = ['#2f5d50', '#3b6ea5', '#b5543c', '#c58a1c', '#7a5aa6', '#4f8a3c', '#a2456e', '#5f6b73']
 
@@ -147,13 +157,26 @@ async function seedDefaults() {
   }
 }
 
+/** 예전 dailyText 표(날짜 기본 키)의 기록을 days 표로 옮긴다. 이미 days 에 같은 날이 있으면 그대로 둔다. */
+async function migrateDailyTextTable() {
+  const old = await db.dailyText.toArray()
+  if (!old.length) return
+  await db.transaction('rw', db.days, db.dailyText, async () => {
+    const ids = old.map((r) => dayId(r.date))
+    const existing = await db.days.bulkGet(ids)
+    const rows = old.map((r, i) => ({ ...r, id: ids[i] })).filter((_, i) => !existing[i])
+    if (rows.length) await db.days.bulkAdd(rows)
+    await db.dailyText.clear()
+  })
+}
+
 /** 계정 id 가 붙기 전의 기본 질문 id(qdefault01 등)를 가리키는 답을 새 id 로 고친다. */
 async function repairDefaultAnswers() {
   const old = await db.answers.filter((a) => /^qdefault\d\d$/.test(a.questionId)).toArray()
   for (const a of old) await db.answers.update(a.id, { questionId: defaultQuestionId(Number(a.questionId.slice(8)) - 1) })
 }
 
-type Rows = Partial<Record<(typeof TABLES)[number], Record<string, unknown>[]>>
+type Rows = Partial<Record<(typeof TABLES)[number] | 'dailyText', Record<string, unknown>[]>>
 
 /**
  * 예전 형식(숫자 id) 기록을 동기화용 문자열 id 로 바꾼다. 계획↔할 일, 질문↔답 연결도 함께 고친다.
@@ -197,7 +220,8 @@ export function normalizeRows(rows: Rows): Rows {
     .filter((a) => a.questionId)
   out.events = (rows.events ?? []).map((r) => remap(r))
   out.timetable = (rows.timetable ?? []).map((r) => remap(r))
-  out.dailyText = (rows.dailyText ?? []).map(strip)
+  // 예전 백업의 dailyText 와 새 days 모두, 지금 계정 기준 id 로 다시 만든다
+  out.days = [...(rows.dailyText ?? []), ...(rows.days ?? [])].map((r) => ({ ...strip(r), id: dayId(String(r.date)) }))
   return out
 }
 
@@ -226,7 +250,7 @@ async function migrateLegacyDb() {
     dailyText: 'date',
   })
   const rows: Rows = {}
-  for (const t of TABLES) rows[t] = await legacy.table(t).toArray()
+  for (const t of LEGACY_TABLES) rows[t] = await legacy.table(t).toArray()
   legacy.close()
 
   const data = normalizeRows(rows)
@@ -243,6 +267,7 @@ export async function startup() {
   // 오프라인이면 다음에 연결될 때 자동으로 동기화된다.
   await Promise.race([db.cloud.sync({ wait: true, purpose: 'pull' }).catch(() => {}), new Promise((r) => setTimeout(r, 8000))])
   await migrateLegacyDb()
+  await migrateDailyTextTable()
   await repairDefaultAnswers()
   await seedDefaults()
 }

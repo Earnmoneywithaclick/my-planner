@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
-import { useLiveQuery } from 'dexie-react-hooks'
+import { useLiveQuery, useObservable } from 'dexie-react-hooks'
 import { eachDayOfInterval, endOfMonth, startOfMonth } from 'date-fns'
-import { db, type DailyText } from '../db'
+import { db, dayId, type DailyText } from '../db'
 import { dailyTextUrl, fromKey, shiftKey, toKey } from '../lib/date'
 import { Card, TextArea } from './ui'
-import { BookIcon, CheckIcon, ExternalIcon } from './icons'
+import { BookIcon, CheckIcon, ExternalIcon, FlameIcon } from './icons'
 
 async function patchDaily(date: string, patch: Partial<DailyText>) {
-  const cur = await db.dailyText.get(date)
-  await db.dailyText.put({ date, read: 0, memo: '', ...cur, ...patch, updatedAt: Date.now() })
+  const id = dayId(date)
+  const cur = await db.days.get(id)
+  await db.days.put({ read: 0, memo: '', ...cur, ...patch, id, date, updatedAt: Date.now() })
 }
 
 /** 오늘부터(오늘 아직 안 읽었으면 어제부터) 거꾸로 연속해서 읽은 날 수 */
@@ -22,9 +23,29 @@ function streakOf(readDays: Set<string>, today: string) {
   return n
 }
 
+/** 오늘 했는지 체크하는 버튼 (기도 · 개인 연구) */
+function DailyCheck({ label, checked, onToggle }: { label: string; checked: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={checked}
+      onClick={onToggle}
+      className={`flex-1 h-12 rounded-xl font-semibold text-[16px] flex items-center justify-center gap-2 active:opacity-70 ${checked ? 'bg-accent text-bg' : 'bg-card-2 text-ink-2'}`}
+    >
+      <span className={`size-[22px] rounded-full border-2 grid place-items-center ${checked ? 'border-bg' : 'border-ink-3'}`}>
+        {checked && <CheckIcon width={14} height={14} strokeWidth={3} />}
+      </span>
+      {label}
+    </button>
+  )
+}
+
 export function DailyTextCard({ date }: { date: string }) {
-  const rec = useLiveQuery(() => db.dailyText.get(date), [date])
-  const readKeys = useLiveQuery(() => db.dailyText.where('read').equals(1).primaryKeys(), [])
+  // id 에 계정이 들어가므로, 로그인이 끝나 계정이 바뀌면 다시 읽는다
+  const userId = useObservable(db.cloud.currentUser)?.userId
+  const rec = useLiveQuery(() => db.days.get(dayId(date)), [date, userId])
+  const readKeys = useLiveQuery(async () => (await db.days.where('read').equals(1).toArray()).map((d) => d.date), [])
   const [memo, setMemo] = useState<string | null>(null)
   const [memoOpen, setMemoOpen] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
@@ -52,7 +73,12 @@ export function DailyTextCard({ date }: { date: string }) {
             <BookIcon width={22} height={22} />
             <h2 className="text-[17px] font-bold">일용할 성구</h2>
           </div>
-          {streak > 0 && <span className="text-[17px] font-bold">🔥 {streak}</span>}
+          {streak > 0 && (
+            <span className="flex items-center gap-1 text-[17px] font-bold tabular-nums" aria-label={`${streak}일 연속`}>
+              <FlameIcon width={20} height={20} strokeWidth={2.1} />
+              {streak}
+            </span>
+          )}
         </div>
         <div className="flex gap-2 mt-3">
           <a
@@ -82,6 +108,10 @@ export function DailyTextCard({ date }: { date: string }) {
             />
           ))}
         </div>
+      </div>
+      <div className="flex gap-2 p-3 border-b border-line">
+        <DailyCheck label="기도" checked={rec?.prayed === 1} onToggle={() => patchDaily(date, { prayed: rec?.prayed === 1 ? 0 : 1 })} />
+        <DailyCheck label="개인 연구" checked={rec?.study === 1} onToggle={() => patchDaily(date, { study: rec?.study === 1 ? 0 : 1 })} />
       </div>
       {memoOpen || memoValue ? (
         <div className="p-3">

@@ -152,8 +152,8 @@ export default function Settings() {
             onClick={async () => {
               if (!confirm('모든 기록을 삭제할까요? 되돌릴 수 없어요.')) return
               if (!confirm('정말 삭제할까요? 백업을 먼저 해 두는 걸 권해요.')) return
-              await db.transaction('rw', TABLES.map((t) => db.table(t)), async () => {
-                for (const t of TABLES) await db.table(t).clear()
+              await db.transaction('rw', [...TABLES, 'dailyText'].map((t) => db.table(t)), async () => {
+                for (const t of [...TABLES, 'dailyText']) await db.table(t).clear()
               })
               setMsg('모든 기록을 삭제했어요.')
             }}
