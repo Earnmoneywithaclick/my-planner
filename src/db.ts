@@ -40,7 +40,7 @@ export interface TimetableBlock {
   id?: number
   weekday: number // 0=일 … 6=토
   start: string
-  end: string
+  end?: string // 없으면 시작 시간만 표시
   title: string
   place?: string
   color: string

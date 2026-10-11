@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type Task } from '../db'
 import { friendlyDate, shiftKey } from '../lib/date'
 import { useNow } from '../lib/hooks'
-import { Card, Chip, Empty, IconButton, PageHeader } from '../components/ui'
+import { Card, Chip, IconButton, PageHeader } from '../components/ui'
 import { PlusIcon } from '../components/icons'
 import { TaskRow, TaskSheet } from '../components/TaskSheet'
 
@@ -46,21 +46,13 @@ export default function Tasks() {
         ))}
       </div>
       <div className="px-4 space-y-3">
-        {data && groups.length === 0 && (
-          <Card>
-            <Empty>{filter === 'done' ? '아직 완료한 일이 없어요' : '할 일이 없어요. 오른쪽 위 + 로 추가해 보세요'}</Empty>
-          </Card>
-        )}
         {groups.map((g) => (
           <Card key={g.label}>
-            <h2 className={`text-[14px] font-bold mb-1 ${g.danger ? 'text-danger' : 'text-ink-2'}`}>
-              {g.label} <span className="text-ink-3 font-semibold">{g.items.length}</span>
-            </h2>
+            <h2 className={`text-[17px] font-bold ${g.danger ? 'text-danger' : ''}`}>{g.label}</h2>
             <ul className="divide-y divide-line">
-              {g.items.map((t) => {
-                const goal = t.goalId != null ? data?.goals.get(t.goalId) : undefined
-                return <TaskRow key={t.id} task={t} goalName={goal?.title} goalColor={goal?.color} onOpen={() => setEdit(t)} />
-              })}
+              {g.items.map((t) => (
+                <TaskRow key={t.id} task={t} goalColor={t.goalId != null ? data?.goals.get(t.goalId)?.color : undefined} onOpen={() => setEdit(t)} />
+              ))}
             </ul>
           </Card>
         ))}

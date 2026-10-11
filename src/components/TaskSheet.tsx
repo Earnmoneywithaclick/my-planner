@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type Task } from '../db'
-import { Button, CheckCircle, Field, PRIORITY_LABEL, Segmented, Sheet, TextArea, TextInput } from './ui'
-import { friendlyDate, todayKey, shiftKey } from '../lib/date'
+import { Button, CheckCircle, PRIORITY_LABEL, Segmented, Select, Sheet, TextArea, TextInput } from './ui'
+import { todayKey, shiftKey } from '../lib/date'
 
 export function TaskSheet({ initial, onClose }: { initial: Partial<Task>; onClose: () => void }) {
   const [t, setT] = useState<Partial<Task>>({ priority: 1, ...initial })
@@ -27,6 +27,12 @@ export function TaskSheet({ initial, onClose }: { initial: Partial<Task>; onClos
   }
 
   const today = todayKey()
+  const quickDates: [string, string][] = [
+    ['오늘', today],
+    ['내일', shiftKey(today, 1)],
+    ['다음 주', shiftKey(today, 7)],
+    ['마감 없음', ''],
+  ]
   return (
     <Sheet
       open
@@ -46,68 +52,47 @@ export function TaskSheet({ initial, onClose }: { initial: Partial<Task>; onClos
       }
     >
       <TextInput autoFocus={isNew} placeholder="무엇을 해야 하나요?" value={t.title ?? ''} onChange={(e) => set({ title: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && save()} />
-      <Field label="마감일">
-        <div className="flex gap-2 mb-2 flex-wrap">
-          {[
-            ['오늘', today],
-            ['내일', shiftKey(today, 1)],
-            ['다음 주', shiftKey(today, 7)],
-            ['없음', ''],
-          ].map(([label, key]) => (
-            <button
-              key={label}
-              type="button"
-              onClick={() => set({ dueDate: key })}
-              className={`h-8 px-3 rounded-full text-[13px] font-semibold ${(t.dueDate ?? '') === key ? 'bg-accent text-bg' : 'bg-card-2 text-ink-2'}`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        <TextInput type="date" value={t.dueDate ?? ''} onChange={(e) => set({ dueDate: e.target.value })} />
-      </Field>
-      <Field label="중요도">
-        <Segmented value={t.priority ?? 1} onChange={(v) => set({ priority: v as Task['priority'] })} options={PRIORITY_LABEL.map((label, i) => ({ value: i, label }))} />
-      </Field>
-      <Field label="연결된 계획">
-        <select className="w-full rounded-xl bg-card-2 px-3.5 py-2.5 min-h-11 text-ink outline-none" value={t.goalId ?? ''} onChange={(e) => set({ goalId: e.target.value ? Number(e.target.value) : undefined })}>
-          <option value="">없음</option>
-          {goals?.map((g) => (
+      <div className="flex gap-2 flex-wrap">
+        {quickDates.map(([label, key]) => (
+          <button
+            key={label}
+            type="button"
+            onClick={() => set({ dueDate: key })}
+            className={`h-10 px-4 rounded-full text-[15px] font-semibold ${(t.dueDate ?? '') === key ? 'bg-accent text-bg' : 'bg-card-2 text-ink-2'}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <TextInput type="date" aria-label="마감일" value={t.dueDate ?? ''} onChange={(e) => set({ dueDate: e.target.value })} />
+      <Segmented value={t.priority ?? 1} onChange={(v) => set({ priority: v as Task['priority'] })} options={PRIORITY_LABEL.map((label, i) => ({ value: i, label: `중요도 ${label}` }))} />
+      {!!goals?.length && (
+        <Select aria-label="연결된 계획" value={t.goalId ?? ''} onChange={(e) => set({ goalId: e.target.value ? Number(e.target.value) : undefined })}>
+          <option value="">계획 연결 안 함</option>
+          {goals.map((g) => (
             <option key={g.id} value={g.id}>
               {g.title}
             </option>
           ))}
-        </select>
-      </Field>
-      <Field label="메모">
-        <TextArea value={t.note ?? ''} onChange={(e) => set({ note: e.target.value })} placeholder="자세한 내용 (선택)" />
-      </Field>
+        </Select>
+      )}
+      <TextArea value={t.note ?? ''} onChange={(e) => set({ note: e.target.value })} placeholder="메모" />
     </Sheet>
   )
 }
 
-export function TaskRow({ task, goalName, goalColor, onOpen }: { task: Task; goalName?: string; goalColor?: string; onOpen: () => void }) {
-  const today = todayKey()
-  const overdue = !task.done && task.dueDate && task.dueDate < today
+/** 할 일 한 줄 — 제목만 보여준다. 기한이 지난 일은 빨간 글자, 계획에 연결된 일은 체크 원이 계획 색. */
+export function TaskRow({ task, goalColor, onOpen }: { task: Task; goalColor?: string; onOpen: () => void }) {
+  const overdue = !task.done && !!task.dueDate && task.dueDate < todayKey()
   const toggle = () => db.tasks.update(task.id!, task.done ? { done: 0, doneAt: undefined } : { done: 1, doneAt: Date.now() })
   return (
-    <li className="flex items-start gap-3 py-2.5">
-      <div className="pt-0.5">
-        <CheckCircle checked={!!task.done} onChange={toggle} color={goalColor} label={`${task.title} 완료`} />
-      </div>
+    <li className="flex items-center gap-3 py-3">
+      <CheckCircle checked={!!task.done} onChange={toggle} color={goalColor} label={`${task.title} 완료`} />
       <button type="button" onClick={onOpen} className="flex-1 min-w-0 text-left">
-        <p className={`text-[16px] leading-snug ${task.done ? 'line-through text-ink-3' : ''}`}>
+        <p className={`text-[17px] leading-snug ${task.done ? 'line-through text-ink-3' : overdue ? 'text-danger' : ''}`}>
           {task.priority === 2 && !task.done && <span className="text-danger font-bold mr-1">!</span>}
           {task.title}
         </p>
-        {(task.dueDate || goalName || task.note) && (
-          <p className="text-[13px] text-ink-3 mt-0.5 truncate">
-            {task.dueDate && <span className={overdue ? 'text-danger font-semibold' : ''}>{overdue ? `${friendlyDate(task.dueDate)} 지남` : friendlyDate(task.dueDate)}</span>}
-            {task.dueDate && goalName && ' · '}
-            {goalName && <span style={{ color: goalColor }}>{goalName}</span>}
-            {!task.dueDate && !goalName && task.note}
-          </p>
-        )}
       </button>
     </li>
   )

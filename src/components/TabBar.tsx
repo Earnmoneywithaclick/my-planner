@@ -18,10 +18,10 @@ export function TabBar() {
             <NavLink
               to={to}
               end={to === '/'}
-              className={({ isActive }) => `flex flex-col items-center gap-0.5 pt-2 pb-1.5 text-[11px] font-semibold ${isActive ? 'text-accent' : 'text-ink-3'}`}
+              aria-label={label}
+              className={({ isActive }) => `flex justify-center py-3.5 ${isActive ? 'text-accent' : 'text-ink-3'}`}
             >
-              <Icon width={25} height={25} />
-              {label}
+              <Icon width={28} height={28} />
             </NavLink>
           </li>
         ))}

@@ -23,6 +23,25 @@ export function friendlyDate(key: string) {
 
 export const nowHHmm = () => format(new Date(), 'HH:mm')
 
+/** 시간은 30분 단위로만 고른다 */
+export const TIME_SLOTS = Array.from({ length: 48 }, (_, i) => `${String(Math.floor(i / 2)).padStart(2, '0')}:${i % 2 ? '30' : '00'}`)
+
+/** '07:30' → '오전 7시 30분' */
+export function timeLabel(hhmm: string) {
+  const [h, m] = hhmm.split(':').map(Number)
+  return `${h < 12 ? '오전' : '오후'} ${h % 12 || 12}시${m ? ` ${m}분` : ''}`
+}
+
+/** '07:30' → '7:30' (목록에 짧게 표시) */
+export const shortTime = (hhmm: string) => hhmm.replace(/^0/, '')
+
+/** 끝 시간이 없으면 시작부터 1시간으로 보고 '지금' 여부를 판단한다 */
+export function effectiveEnd(start: string, end?: string) {
+  if (end) return end
+  const [h, m] = start.split(':').map(Number)
+  return `${String(Math.min(h + 1, 24)).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
 /** 그 날짜의 '일용할 성구' 페이지 (워치타워 온라인 라이브러리, 한국어) */
 export function dailyTextUrl(key: string) {
   const d = fromKey(key)

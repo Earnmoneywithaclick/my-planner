@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type Question } from '../db'
-import { friendlyDate, fmt, shiftKey, todayKey } from '../lib/date'
-import { Button, Field, Sheet, TextArea } from './ui'
+import { shiftKey, todayKey } from '../lib/date'
+import { Button, Chip, Sheet, TextArea } from './ui'
 
 export const CATEGORIES = ['하루 돌아보기', '우선순위', '목표', '나 자신', '관계', '영적인 것', '기타']
 
@@ -13,29 +13,31 @@ export async function saveAnswer(q: Question, text: string) {
   if (q.nextReview && q.nextReview <= today) await db.questions.update(q.id!, { nextReview: undefined })
 }
 
-export function ReviewButtons({ q }: { q: Question }) {
+/** 내일 / 1주 뒤 / 1달 뒤 다시 보기 예약 (다시 누르면 취소) */
+function ReviewButtons({ q }: { q: Question }) {
   const today = todayKey()
   const opts: [string, number][] = [
-    ['내일', 1],
-    ['1주 뒤', 7],
-    ['1달 뒤', 30],
+    ['내일 다시', 1],
+    ['1주 뒤 다시', 7],
+    ['1달 뒤 다시', 30],
   ]
   return (
-    <div className="flex gap-2 flex-wrap items-center">
+    <div className="flex gap-2">
       {opts.map(([label, days]) => {
         const key = shiftKey(today, days)
+        const on = q.nextReview === key
         return (
           <button
             key={label}
             type="button"
-            onClick={() => db.questions.update(q.id!, { nextReview: q.nextReview === key ? undefined : key })}
-            className={`h-8 px-3 rounded-full text-[13px] font-semibold ${q.nextReview === key ? 'bg-gold text-bg' : 'bg-gold-soft text-gold'}`}
+            aria-pressed={on}
+            onClick={() => db.questions.update(q.id!, { nextReview: on ? undefined : key })}
+            className={`flex-1 h-11 rounded-xl text-[15px] font-semibold ${on ? 'bg-gold text-bg' : 'bg-gold-soft text-gold'}`}
           >
             {label}
           </button>
         )
       })}
-      {q.nextReview && <span className="text-[13px] text-ink-3">{friendlyDate(q.nextReview)} 다시 보기</span>}
     </div>
   )
 }
@@ -89,15 +91,13 @@ export function QuestionSheet({ initial, onClose }: { initial: Partial<Question>
         }
       >
         <TextArea autoFocus placeholder="나에게 다시 묻고 싶은 질문" value={text} onChange={(e) => setText(e.target.value)} />
-        <Field label="분류">
-          <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map((c) => (
-              <button key={c} type="button" onClick={() => setCategory(c)} className={`h-8 px-3 rounded-full text-[13px] font-semibold ${category === c ? 'bg-accent text-bg' : 'bg-card-2 text-ink-2'}`}>
-                {c}
-              </button>
-            ))}
-          </div>
-        </Field>
+        <div className="flex flex-wrap gap-2">
+          {CATEGORIES.map((c) => (
+            <Chip key={c} active={category === c} onClick={() => setCategory(c)}>
+              {c}
+            </Chip>
+          ))}
+        </div>
       </Sheet>
     )
   }
@@ -121,32 +121,17 @@ export function QuestionSheet({ initial, onClose }: { initial: Partial<Question>
         </>
       }
     >
-      <div>
-        <p className="text-[13px] font-semibold text-accent mb-1">{q.category}</p>
-        <p className="text-[20px] font-bold leading-snug">{q.text}</p>
-      </div>
-      <Field label="오늘의 생각">
-        <TextArea value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="떠오르는 대로 적어 보세요" rows={4} />
-      </Field>
+      <p className="text-[21px] font-bold leading-snug">{q.text}</p>
+      <TextArea value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="떠오르는 대로 적어 보세요" rows={4} />
       <Button className="w-full" onClick={submitAnswer} disabled={!answer.trim()}>
         답 저장
       </Button>
-      <Field label="다시 생각해 보기">
-        <ReviewButtons q={q} />
-      </Field>
-      {answers && answers.length > 0 && (
-        <div>
-          <p className="text-[13px] font-medium text-ink-3 mb-2">지난 답 {answers.length}개</p>
-          <ul className="space-y-2">
-            {answers.map((a) => (
-              <li key={a.id} className="bg-card rounded-xl p-3">
-                <p className="text-[12px] text-ink-3 mb-1">{fmt(a.date, 'yyyy년 M월 d일 (E)')}</p>
-                <p className="text-[15px] whitespace-pre-wrap leading-relaxed">{a.text}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <ReviewButtons q={q} />
+      {answers?.map((a) => (
+        <p key={a.id} className="bg-card rounded-xl p-3.5 text-[16px] whitespace-pre-wrap leading-relaxed">
+          {a.text}
+        </p>
+      ))}
     </Sheet>
   )
 }

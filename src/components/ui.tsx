@@ -1,14 +1,13 @@
-import { useEffect, type ReactNode, type InputHTMLAttributes, type TextareaHTMLAttributes, type ButtonHTMLAttributes } from 'react'
+import { useEffect, type ReactNode, type InputHTMLAttributes, type TextareaHTMLAttributes, type ButtonHTMLAttributes, type SelectHTMLAttributes } from 'react'
 import { COLORS } from '../db'
 import { CheckIcon } from './icons'
 
-export function PageHeader({ title, sub, right }: { title: string; sub?: string; right?: ReactNode }) {
+// 글자는 15px 미만으로 쓰지 않는다 — 보조 설명 글은 넣지 않고 꼭 필요한 정보만 보여준다.
+
+export function PageHeader({ title, right }: { title: string; right?: ReactNode }) {
   return (
-    <header className="pt-safe px-5 pb-3 flex items-end justify-between gap-3">
-      <div>
-        {sub && <p className="text-[13px] font-medium text-ink-3">{sub}</p>}
-        <h1 className="text-[28px] font-bold tracking-tight leading-tight">{title}</h1>
-      </div>
+    <header className="pt-safe px-5 pb-3 flex items-center justify-between gap-3">
+      <h1 className="text-[28px] font-bold tracking-tight leading-tight">{title}</h1>
       {right}
     </header>
   )
@@ -20,15 +19,11 @@ export function Card({ children, className = '' }: { children: ReactNode; classN
 
 export function SectionTitle({ children, right }: { children: ReactNode; right?: ReactNode }) {
   return (
-    <div className="flex items-center justify-between mb-2.5">
-      <h2 className="text-[15px] font-semibold text-ink-2">{children}</h2>
+    <div className="flex items-center justify-between min-h-8 mb-2">
+      <h2 className="text-[17px] font-bold">{children}</h2>
       {right}
     </div>
   )
-}
-
-export function Empty({ children }: { children: ReactNode }) {
-  return <p className="text-[14px] text-ink-3 py-3 text-center">{children}</p>
 }
 
 export function Button({ variant = 'primary', className = '', ...p }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'soft' | 'ghost' | 'danger' }) {
@@ -38,23 +33,14 @@ export function Button({ variant = 'primary', className = '', ...p }: ButtonHTML
     ghost: 'bg-card-2 text-ink',
     danger: 'bg-transparent text-danger',
   }[variant]
-  return <button className={`h-11 px-4 rounded-xl text-[15px] font-semibold active:opacity-70 disabled:opacity-40 ${styles} ${className}`} {...p} />
+  return <button className={`h-12 px-4 rounded-xl text-[16px] font-semibold active:opacity-70 disabled:opacity-40 ${styles} ${className}`} {...p} />
 }
 
 export function IconButton({ label, className = '', ...p }: ButtonHTMLAttributes<HTMLButtonElement> & { label: string }) {
-  return <button aria-label={label} title={label} className={`size-10 grid place-items-center rounded-full active:bg-card-2 ${className}`} {...p} />
+  return <button aria-label={label} title={label} className={`size-11 grid place-items-center rounded-full active:bg-card-2 ${className}`} {...p} />
 }
 
-export function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label className="block">
-      <span className="block text-[13px] font-medium text-ink-3 mb-1.5">{label}</span>
-      {children}
-    </label>
-  )
-}
-
-const inputCls = 'w-full rounded-xl bg-card-2 px-3.5 py-2.5 text-ink placeholder:text-ink-3 outline-none focus:ring-2 focus:ring-accent/40'
+const inputCls = 'w-full rounded-xl bg-card-2 px-3.5 py-2.5 min-h-12 text-ink placeholder:text-ink-3 outline-none focus:ring-2 focus:ring-accent/40'
 
 export function TextInput(p: InputHTMLAttributes<HTMLInputElement>) {
   return <input {...p} className={`${inputCls} ${p.className ?? ''}`} />
@@ -62,6 +48,10 @@ export function TextInput(p: InputHTMLAttributes<HTMLInputElement>) {
 
 export function TextArea(p: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return <textarea rows={3} {...p} className={`${inputCls} resize-none leading-relaxed ${p.className ?? ''}`} />
+}
+
+export function Select(p: SelectHTMLAttributes<HTMLSelectElement>) {
+  return <select {...p} className={`${inputCls} ${p.className ?? ''}`} />
 }
 
 export function Segmented<T extends string | number>({ value, options, onChange }: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void }) {
@@ -72,7 +62,7 @@ export function Segmented<T extends string | number>({ value, options, onChange 
           key={String(o.value)}
           type="button"
           onClick={() => onChange(o.value)}
-          className={`flex-1 h-9 rounded-lg text-[14px] font-semibold transition-colors ${value === o.value ? 'bg-card text-ink shadow-sm' : 'text-ink-3'}`}
+          className={`flex-1 h-10 rounded-lg text-[15px] font-semibold transition-colors ${value === o.value ? 'bg-card text-ink shadow-sm' : 'text-ink-3'}`}
         >
           {o.label}
         </button>
@@ -86,7 +76,7 @@ export function Chip({ active, children, onClick }: { active?: boolean; children
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 h-8 px-3.5 rounded-full text-[13px] font-semibold border transition-colors ${active ? 'bg-ink text-bg border-ink' : 'bg-card text-ink-2 border-line'}`}
+      className={`shrink-0 h-10 px-4 rounded-full text-[15px] font-semibold transition-colors ${active ? 'bg-accent text-bg' : 'bg-card-2 text-ink-2'}`}
     >
       {children}
     </button>
@@ -95,14 +85,14 @@ export function Chip({ active, children, onClick }: { active?: boolean; children
 
 export function ColorPicker({ value, onChange }: { value: string; onChange: (c: string) => void }) {
   return (
-    <div className="flex flex-wrap gap-2.5">
+    <div className="flex flex-wrap gap-3">
       {COLORS.map((c) => (
         <button
           key={c}
           type="button"
           aria-label={`색상 ${c}`}
           onClick={() => onChange(c)}
-          className="size-8 rounded-full grid place-items-center"
+          className="size-9 rounded-full"
           style={{ background: c, boxShadow: value === c ? `0 0 0 2px var(--bg), 0 0 0 4px ${c}` : undefined }}
         />
       ))}
@@ -112,19 +102,12 @@ export function ColorPicker({ value, onChange }: { value: string; onChange: (c: 
 
 export function CheckCircle({ checked, onChange, color, label }: { checked: boolean; onChange: () => void; color?: string; label: string }) {
   return (
-    <button
-      type="button"
-      role="checkbox"
-      aria-checked={checked}
-      aria-label={label}
-      onClick={onChange}
-      className="size-11 -m-2 grid place-items-center shrink-0"
-    >
+    <button type="button" role="checkbox" aria-checked={checked} aria-label={label} onClick={onChange} className="size-11 -m-2 grid place-items-center shrink-0">
       <span
-        className="size-[22px] rounded-full border-2 grid place-items-center transition-colors"
+        className="size-6 rounded-full border-2 grid place-items-center transition-colors"
         style={{ borderColor: color ?? 'var(--ink-3)', background: checked ? (color ?? 'var(--accent)') : 'transparent' }}
       >
-        {checked && <CheckIcon width={14} height={14} strokeWidth={3} className="text-bg" />}
+        {checked && <CheckIcon width={15} height={15} strokeWidth={3} className="text-bg" />}
       </span>
     </button>
   )
@@ -149,10 +132,10 @@ export function Sheet({ open, title, onClose, children, footer }: { open: boolea
       <div className="absolute inset-0 bg-black/35 animate-fade" onClick={onClose} />
       <div className="relative bg-bg rounded-t-3xl max-h-[92dvh] flex flex-col animate-sheet">
         <div className="flex items-center justify-between px-5 pt-3 pb-2">
-          <button type="button" onClick={onClose} className="h-10 text-[15px] text-ink-3 font-medium">
+          <button type="button" onClick={onClose} className="h-11 text-[16px] text-ink-3 font-medium">
             닫기
           </button>
-          <h2 className="text-[16px] font-bold">{title}</h2>
+          <h2 className="text-[17px] font-bold">{title}</h2>
           <span className="w-8" />
         </div>
         <div className="overflow-y-auto px-5 pb-4 space-y-4">{children}</div>
