@@ -74,7 +74,7 @@ function DayView({
 
   return (
     <div className="board">
-      <MonthCalendar today={today} selected={selected} onSelect={onSelect} />
+      <MonthCalendar today={today} selected={selected} onSelect={onSelect} onAdd={(d) => onEvent({ date: d })} />
       <Card>
         <SectionTitle>{friendlyDate(selected)}</SectionTitle>
         <AgendaList items={agenda} now={selected === today ? nowHHmm() : undefined} onOpen={(it) => (it.kind === 'block' ? onBlock(it.block) : onEvent(it.event))} />
