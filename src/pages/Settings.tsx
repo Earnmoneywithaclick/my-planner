@@ -5,7 +5,7 @@ import { db, PALETTE, replaceAll, TABLES } from '../db'
 import { todayKey } from '../lib/date'
 import { Button, Card, PageHeader, SectionTitle, TextInput } from '../components/ui'
 import { recolorCategory, renameCategory, useCategories } from '../components/Categories'
-import { ChevronLeft } from '../components/icons'
+import { ChevronLeft, ChevronRight } from '../components/icons'
 
 const BACKUP_APP = 'my-planner'
 
@@ -167,6 +167,14 @@ export default function Settings() {
         }
       />
       <div className="gutter board">
+        {/* 사용 안내 */}
+        <Link to="/guide" className="block">
+          <Card className="flex items-center justify-between active:opacity-80">
+            <span className="text-[17px] font-bold">사용 안내</span>
+            <ChevronRight width={20} height={20} className="text-ink-3" />
+          </Card>
+        </Link>
+
         <SyncCard />
 
         <CategoryCard />

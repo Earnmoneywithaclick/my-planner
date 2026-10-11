@@ -6,6 +6,7 @@ import Timetable from './pages/Timetable'
 import Tasks from './pages/Tasks'
 import Questions from './pages/Questions'
 import Settings from './pages/Settings'
+import Guide from './pages/Guide'
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="/plans" element={<Navigate to="/tasks" replace />} />
           <Route path="/questions" element={<Questions />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/guide" element={<Guide />} />
         </Routes>
       </main>
       <TabBar />
