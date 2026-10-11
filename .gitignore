@@ -4,3 +4,5 @@ dev-dist
 *.local
 .DS_Store
 .claude/settings.local.json
+dexie-cloud.key
+*.tsbuildinfo

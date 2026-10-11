@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db, type Question } from '../db'
+import { db, newId, type Question } from '../db'
 import { shiftKey, todayKey } from '../lib/date'
 import { Button, Chip, Sheet, TextArea } from './ui'
 
@@ -9,7 +9,7 @@ export const CATEGORIES = ['하루 돌아보기', '우선순위', '목표', '나
 /** 답을 저장하고, '다시 보기' 예약이 지났다면 예약을 지운다 */
 export async function saveAnswer(q: Question, text: string) {
   const today = todayKey()
-  await db.answers.add({ questionId: q.id!, date: today, text: text.trim(), createdAt: Date.now() })
+  await db.answers.add({ id: newId(), questionId: q.id!, date: today, text: text.trim(), createdAt: Date.now() })
   if (q.nextReview && q.nextReview <= today) await db.questions.update(q.id!, { nextReview: undefined })
 }
 
@@ -56,7 +56,7 @@ export function QuestionSheet({ initial, onClose }: { initial: Partial<Question>
   async function saveQuestion() {
     if (!text.trim()) return
     if (isNew) {
-      await db.questions.add({ text: text.trim(), category, pinned: 0, createdAt: Date.now() })
+      await db.questions.add({ id: newId(), text: text.trim(), category, pinned: 0, createdAt: Date.now() })
       onClose()
     } else {
       await db.questions.update(q.id!, { text: text.trim(), category })

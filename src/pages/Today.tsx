@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db, type PlanEvent, type Question, type Task, type TimetableBlock } from '../db'
+import { db, newId, type PlanEvent, type Question, type Task, type TimetableBlock } from '../db'
 import { dayHash, fmt, nowHHmm } from '../lib/date'
 import { useAgenda, useNow } from '../lib/hooks'
 import { Button, Card, IconButton, PageHeader, SectionTitle, TextArea, TextInput } from '../components/ui'
@@ -71,7 +71,7 @@ function TodayTasks({ today, onOpen }: { today: string; onOpen: (t: Partial<Task
   async function quickAdd() {
     const title = draft.trim()
     if (!title) return
-    await db.tasks.add({ title, dueDate: today, priority: 1, done: 0, createdAt: Date.now() })
+    await db.tasks.add({ id: newId(), title, dueDate: today, priority: 1, done: 0, createdAt: Date.now() })
     setDraft('')
   }
 

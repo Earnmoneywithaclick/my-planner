@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db, type Task } from '../db'
+import { db, newId, type Task } from '../db'
 import { Button, CheckCircle, PRIORITY_LABEL, Segmented, Select, Sheet, TextArea, TextInput } from './ui'
 import { todayKey, shiftKey } from '../lib/date'
 
@@ -14,7 +14,7 @@ export function TaskSheet({ initial, onClose }: { initial: Partial<Task>; onClos
     const title = t.title?.trim()
     if (!title) return
     const data = { ...t, title, note: t.note?.trim() || undefined, dueDate: t.dueDate || undefined }
-    if (isNew) await db.tasks.add({ done: 0, createdAt: Date.now(), priority: 1, ...data, title } as Task)
+    if (isNew) await db.tasks.add({ done: 0, createdAt: Date.now(), priority: 1, ...data, title, id: newId() } as Task)
     else await db.tasks.update(t.id!, data)
     onClose()
   }
@@ -67,7 +67,7 @@ export function TaskSheet({ initial, onClose }: { initial: Partial<Task>; onClos
       <TextInput type="date" aria-label="마감일" value={t.dueDate ?? ''} onChange={(e) => set({ dueDate: e.target.value })} />
       <Segmented value={t.priority ?? 1} onChange={(v) => set({ priority: v as Task['priority'] })} options={PRIORITY_LABEL.map((label, i) => ({ value: i, label: `중요도 ${label}` }))} />
       {!!goals?.length && (
-        <Select aria-label="연결된 계획" value={t.goalId ?? ''} onChange={(e) => set({ goalId: e.target.value ? Number(e.target.value) : undefined })}>
+        <Select aria-label="연결된 계획" value={t.goalId ?? ''} onChange={(e) => set({ goalId: e.target.value || undefined })}>
           <option value="">계획 연결 안 함</option>
           {goals.map((g) => (
             <option key={g.id} value={g.id}>

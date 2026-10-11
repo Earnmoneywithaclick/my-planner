@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { db, TABLES } from '../db'
+import { useObservable } from 'dexie-react-hooks'
+import { db, replaceAll, TABLES } from '../db'
 import { todayKey } from '../lib/date'
 import { Button, Card, PageHeader, SectionTitle } from '../components/ui'
 import { ChevronLeft } from '../components/icons'
@@ -34,13 +35,59 @@ async function exportBackup() {
 async function importBackup(file: File) {
   const parsed = JSON.parse(await file.text())
   if (parsed?.app !== BACKUP_APP || typeof parsed.data !== 'object') throw new Error('이 앱의 백업 파일이 아니에요.')
-  await db.transaction('rw', TABLES.map((t) => db.table(t)), async () => {
-    for (const t of TABLES) {
-      await db.table(t).clear()
-      const rows = parsed.data[t]
-      if (Array.isArray(rows)) await db.table(t).bulkPut(rows)
-    }
-  })
+  // 예전(동기화 전) 백업은 숫자 id 라서 replaceAll 이 새 id 로 바꿔 넣는다
+  await replaceAll(parsed.data)
+}
+
+const SYNC_LABEL: Record<string, string> = {
+  'in-sync': '동기화됨',
+  pushing: '보내는 중',
+  pulling: '받는 중',
+  initial: '준비 중',
+  'not-in-sync': '기다리는 중',
+  offline: '오프라인',
+  error: '동기화 오류',
+}
+
+function SyncCard() {
+  const user = useObservable(db.cloud.currentUser)
+  const sync = useObservable(db.cloud.syncState)
+  const [busy, setBusy] = useState(false)
+  const status = sync?.phase === 'offline' || sync?.status === 'offline' ? 'offline' : sync?.error ? 'error' : (sync?.phase ?? 'initial')
+
+  return (
+    <Card>
+      <SectionTitle right={<span className={`text-[15px] font-semibold ${status === 'error' ? 'text-danger' : 'text-accent'}`}>{SYNC_LABEL[status] ?? status}</span>}>동기화</SectionTitle>
+      {user?.isLoggedIn && <p className="text-[16px] mb-3 break-all">{user.email}</p>}
+      <div className="flex gap-2">
+        <Button
+          variant="soft"
+          className="flex-1"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true)
+            try {
+              await db.cloud.sync({ wait: true, purpose: 'pull' })
+            } finally {
+              setBusy(false)
+            }
+          }}
+        >
+          지금 동기화
+        </Button>
+        {user?.isLoggedIn && (
+          <Button
+            variant="ghost"
+            onClick={async () => {
+              if (confirm('로그아웃할까요? 이 기기의 기록은 지워지고, 다시 로그인하면 받아와요.')) await db.cloud.logout()
+            }}
+          >
+            로그아웃
+          </Button>
+        )}
+      </div>
+    </Card>
+  )
 }
 
 export default function Settings() {
@@ -59,6 +106,8 @@ export default function Settings() {
         }
       />
       <div className="px-4 space-y-3">
+        <SyncCard />
+
         <Card>
           <SectionTitle>백업</SectionTitle>
           <div className="flex gap-2">

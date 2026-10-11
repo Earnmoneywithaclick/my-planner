@@ -1,5 +1,6 @@
 import { HashRouter, Route, Routes } from 'react-router-dom'
 import { TabBar } from './components/TabBar'
+import { LoginGate } from './components/LoginGate'
 import Today from './pages/Today'
 import Timetable from './pages/Timetable'
 import Tasks from './pages/Tasks'
@@ -21,6 +22,7 @@ export default function App() {
         </Routes>
       </main>
       <TabBar />
+      <LoginGate />
     </HashRouter>
   )
 }

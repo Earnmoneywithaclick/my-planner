@@ -86,7 +86,7 @@ export default function Questions() {
   )
 }
 
-function AnswerLog({ data, onOpen }: { data: { answers: Answer[]; byId: Map<number, Question> } | undefined; onOpen: (q: Question) => void }) {
+function AnswerLog({ data, onOpen }: { data: { answers: Answer[]; byId: Map<string, Question> } | undefined; onOpen: (q: Question) => void }) {
   if (!data?.answers.length) return null
   const sorted = [...data.answers].sort((a, b) => b.createdAt - a.createdAt)
 

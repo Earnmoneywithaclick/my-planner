@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { COLORS, db, type Goal, type Task } from '../db'
+import { COLORS, db, newId, type Goal, type Task } from '../db'
 import { Button, Card, Chip, ColorPicker, IconButton, PageHeader, Sheet, TextArea, TextInput } from '../components/ui'
 import { PlusIcon } from '../components/icons'
 import { TaskRow, TaskSheet } from '../components/TaskSheet'
@@ -10,11 +10,11 @@ const STATUS_LABEL: Record<Goal['status'], string> = { active: '진행 중', pau
 export default function Plans() {
   const [show, setShow] = useState<'active' | 'other'>('active')
   const [edit, setEdit] = useState<Partial<Goal> | null>(null)
-  const [openId, setOpenId] = useState<number | null>(null)
+  const [openId, setOpenId] = useState<string | null>(null)
 
   const data = useLiveQuery(async () => {
-    const [goals, tasks] = await Promise.all([db.goals.toArray(), db.tasks.where('goalId').above(0).toArray()])
-    const stats = new Map<number, { done: number; total: number }>()
+    const [goals, tasks] = await Promise.all([db.goals.toArray(), db.tasks.where('goalId').above('').toArray()])
+    const stats = new Map<string, { done: number; total: number }>()
     for (const t of tasks) {
       const s = stats.get(t.goalId!) ?? { done: 0, total: 0 }
       s.total++
@@ -79,7 +79,7 @@ function GoalEditSheet({ initial, onClose }: { initial: Partial<Goal>; onClose: 
   async function save() {
     if (!g.title?.trim()) return
     const data = { title: g.title.trim(), why: g.why?.trim() || undefined, startDate: g.startDate || undefined, endDate: g.endDate || undefined, color: g.color!, status: g.status! }
-    if (isNew) await db.goals.add({ ...data, createdAt: Date.now() })
+    if (isNew) await db.goals.add({ ...data, id: newId(), createdAt: Date.now() })
     else await db.goals.update(g.id!, data)
     onClose()
   }
@@ -116,7 +116,7 @@ function GoalEditSheet({ initial, onClose }: { initial: Partial<Goal>; onClose: 
   )
 }
 
-function GoalDetailSheet({ id, onClose }: { id: number; onClose: () => void }) {
+function GoalDetailSheet({ id, onClose }: { id: string; onClose: () => void }) {
   const goal = useLiveQuery(() => db.goals.get(id), [id])
   const tasks = useLiveQuery(() => db.tasks.where('goalId').equals(id).toArray(), [id])
   const [draft, setDraft] = useState('')
@@ -129,7 +129,7 @@ function GoalDetailSheet({ id, onClose }: { id: number; onClose: () => void }) {
 
   async function addStep() {
     if (!draft.trim()) return
-    await db.tasks.add({ title: draft.trim(), goalId: id, priority: 1, done: 0, createdAt: Date.now() })
+    await db.tasks.add({ id: newId(), title: draft.trim(), goalId: id, priority: 1, done: 0, createdAt: Date.now() })
     setDraft('')
   }
 

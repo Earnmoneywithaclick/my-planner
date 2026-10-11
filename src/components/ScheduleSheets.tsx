@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { COLORS, db, type PlanEvent, type TimetableBlock } from '../db'
+import { COLORS, db, newId, type PlanEvent, type TimetableBlock } from '../db'
 import { TIME_SLOTS, WEEKDAYS, WEEK_ORDER, timeLabel } from '../lib/date'
 import { Button, ColorPicker, Select, Sheet, TextArea, TextInput } from './ui'
 
@@ -79,7 +79,7 @@ export function BlockSheet({ initial, onClose }: { initial: Partial<TimetableBlo
   async function save() {
     if (!valid) return
     const base = { title: b.title!.trim(), place: b.place?.trim() || undefined, start: b.start!, end: b.end || undefined, color: b.color! }
-    if (isNew) await db.timetable.bulkAdd(days.map((weekday) => ({ ...base, weekday })))
+    if (isNew) await db.timetable.bulkAdd(days.map((weekday) => ({ ...base, weekday, id: newId() })))
     else await db.timetable.update(b.id!, { ...base, weekday: days[0] })
     onClose()
   }
@@ -122,7 +122,7 @@ export function EventSheet({ initial, onClose }: { initial: Partial<PlanEvent>; 
       note: ev.note?.trim() || undefined,
       color: ev.color!,
     }
-    if (isNew) await db.events.add({ ...data, createdAt: Date.now() })
+    if (isNew) await db.events.add({ ...data, id: newId(), createdAt: Date.now() })
     else await db.events.update(ev.id!, data)
     onClose()
   }
