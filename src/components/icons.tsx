@@ -75,6 +75,12 @@ export const PinIcon = (p: P) => (
     <path d="M12 17v5M8 3h8l-1 6 3 3v2H6v-2l3-3z" />
   </Base>
 )
+export const NotesIcon = (p: P) => (
+  <Base {...p}>
+    <rect x="4" y="3" width="16" height="18" rx="2.5" />
+    <path d="M8 8h8M8 12h8M8 16h5" />
+  </Base>
+)
 export const BagIcon = (p: P) => (
   <Base {...p}>
     <rect x="3" y="7" width="18" height="13" rx="2.5" />

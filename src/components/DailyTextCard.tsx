@@ -4,7 +4,8 @@ import { eachDayOfInterval, endOfMonth, startOfMonth } from 'date-fns'
 import { db, dayId, patchDay as patchDaily } from '../db'
 import { dailyTextUrl, fromKey, shiftKey, toKey } from '../lib/date'
 import { Card, TextArea } from './ui'
-import { BookIcon, CheckIcon, ExternalIcon, FlameIcon } from './icons'
+import { BookIcon, CheckIcon, ExternalIcon, FlameIcon, NotesIcon } from './icons'
+import { MemoSheet } from './MemoSheet'
 import { useChanged } from '../lib/motion'
 
 /** 오늘부터(오늘 아직 안 읽었으면 어제부터) 거꾸로 연속해서 읽은 날 수 */
@@ -44,6 +45,7 @@ export function DailyTextCard({ date }: { date: string }) {
   const readKeys = useLiveQuery(async () => (await db.days.where('read').equals(1).toArray()).map((d) => d.date), [])
   const [memo, setMemo] = useState<string | null>(null)
   const [memoOpen, setMemoOpen] = useState(false)
+  const [memosOpen, setMemosOpen] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   useEffect(() => () => clearTimeout(timer.current), [])
@@ -70,12 +72,18 @@ export function DailyTextCard({ date }: { date: string }) {
             <BookIcon width={22} height={22} />
             <h2 className="text-[17px] font-bold">일용할 성구</h2>
           </div>
-          {streak > 0 && (
-            <span className="flex items-center gap-1 text-[17px] font-bold tabular-nums" aria-label={`${streak}일 연속`}>
-              <FlameIcon width={20} height={20} strokeWidth={2.1} />
-              {streak}
-            </span>
-          )}
+          <div className="flex items-center gap-1">
+            {streak > 0 && (
+              <span className="flex items-center gap-1 text-[17px] font-bold tabular-nums" aria-label={`${streak}일 연속`}>
+                <FlameIcon width={20} height={20} strokeWidth={2.1} />
+                {streak}
+              </span>
+            )}
+            {/* 지금까지 적은 묵상 메모 모아 보기 */}
+            <button type="button" aria-label="묵상 메모 모아 보기" onClick={() => setMemosOpen(true)} className="size-11 -my-3 -mr-2 grid place-items-center rounded-full active:bg-gold-soft">
+              <NotesIcon width={21} height={21} />
+            </button>
+          </div>
         </div>
         <div className="flex gap-2 mt-3">
           <a
@@ -119,6 +127,7 @@ export function DailyTextCard({ date }: { date: string }) {
           + 묵상 메모
         </button>
       )}
+      {memosOpen && <MemoSheet onClose={() => setMemosOpen(false)} />}
     </Card>
   )
 }
