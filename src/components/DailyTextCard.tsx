@@ -98,10 +98,10 @@ export function DailyTextCard({ date }: { date: string }) {
             type="button"
             onClick={() => patchDaily(date, { read: isRead ? 0 : 1 })}
             aria-pressed={isRead}
-            className={`h-12 px-4 rounded-xl font-semibold text-[16px] flex items-center gap-1.5 active:opacity-70 ${isRead ? 'bg-accent text-bg' : 'bg-card text-ink-2'}`}
+            aria-label={isRead ? '읽음 취소' : '읽음'}
+            className={`h-12 rounded-xl font-semibold text-[16px] flex items-center justify-center active:opacity-70 ${isRead ? 'w-12 bg-accent text-bg' : 'px-4 bg-card text-ink-2'}`}
           >
-            {isRead && <CheckIcon width={18} height={18} strokeWidth={2.6} className={readPopped ? 'animate-pop' : ''} />}
-            {isRead ? '읽었어요' : '읽음'}
+            {isRead ? <CheckIcon width={22} height={22} strokeWidth={2.6} className={readPopped ? 'animate-pop' : ''} /> : '읽음'}
           </button>
         </div>
         {/* 이번 달 읽은 날 */}
