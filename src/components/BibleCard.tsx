@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useLiveQuery, useObservable } from 'dexie-react-hooks'
 import { addDays, differenceInCalendarDays } from 'date-fns'
 import { biblePlanId, db, dayId, patchDay, type BiblePlan } from '../db'
-import { BOOKS, SCOPES, chapterUrl, chaptersOf, rangeLabel } from '../lib/bible'
+import { BOOKS, SCOPES, chaptersOf, rangeLabel, readingUrl } from '../lib/bible'
 import { fmt, fromKey, toKey } from '../lib/date'
 import { useChanged } from '../lib/motion'
 import { Button, Card, Chip, Segmented, Select, Sheet, TextInput } from './ui'
@@ -88,7 +88,7 @@ export function BibleCard({ today }: { today: string }) {
           <p className={`text-[20px] font-bold leading-snug mb-3 ${popped ? 'animate-pop' : ''}`}>{rangeLabel(chapters[from - 1], chapters[to - 1])}</p>
           <div className="flex gap-2">
             <a
-              href={chapterUrl(chapters[from - 1])}
+              href={readingUrl(chapters[from - 1], chapters[to - 1])}
               target="_blank"
               rel="noopener noreferrer"
               className="flex-1 h-12 rounded-xl bg-card-2 text-ink font-semibold text-[16px] flex items-center justify-center gap-1.5 active:opacity-70"

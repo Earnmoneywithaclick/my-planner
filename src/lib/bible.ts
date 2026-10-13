@@ -34,5 +34,14 @@ export function rangeLabel(from: Chapter, to: Chapter) {
   return `${a} ${from.chapter}장 – ${BOOKS[to.book - 1].name} ${to.chapter}장`
 }
 
-/** jw.org 온라인 라이브러리의 연구용 성경 그 장 */
-export const chapterUrl = (c: Chapter) => `https://wol.jw.org/ko/wol/b/r8/lp-ko/nwtsty/${c.book}/${c.chapter}`
+const verseCode = (book: number, chapter: number, verse: number) => `${String(book).padStart(2, '0')}${String(chapter).padStart(3, '0')}${String(verse).padStart(3, '0')}`
+
+/**
+ * 오늘 읽을 곳을 여는 jw.org 공유 링크 (연구용 성경). JW Library 앱이 있으면 앱에서 그 장이 바로 열리고,
+ * 없으면 jw.org 웹 성경으로 간다. 같은 책 안의 여러 장이면 마지막 장까지 범위로 건넨다.
+ */
+export function readingUrl(from: Chapter, to: Chapter = from) {
+  const end = to.book === from.book ? to.chapter : from.chapter
+  const range = `${verseCode(from.book, from.chapter, 1)}-${verseCode(from.book, end, 999)}`
+  return `https://www.jw.org/finder?srcid=jwlshare&wtlocale=KO&prefer=lang&pub=nwtsty&bible=${range}`
+}
