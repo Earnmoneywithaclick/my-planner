@@ -77,6 +77,8 @@ export interface DailyText {
   prayed?: 0 | 1 // 오늘 기도했는지
   study?: 0 | 1 // 오늘 개인 연구했는지
   serviceMin?: number // 오늘 봉사한 시간 (분)
+  bibleFrom?: number // 오늘 '다 읽었어요'로 표시한 성경 읽기 범위 (계획 안의 순번, 1부터)
+  bibleTo?: number
   memo: string
   updatedAt: number
 }
@@ -93,6 +95,18 @@ export interface Category {
   name?: string
 }
 
+/** 성경 읽기 계획 — 계정마다 하나 (id = biblePlanId()) */
+export interface BiblePlan {
+  id: string
+  fromBook: number // 1 = 창세기 … 66 = 요한 계시록
+  toBook: number
+  startDate: string
+  endDate: string
+  perDay: number // 하루에 읽을 장 수
+  readUpTo: number // 계획 범위 안에서 지금까지 읽은 장 수 (순서대로)
+  updatedAt: number
+}
+
 export const newId = () => crypto.randomUUID()
 
 export const db = new Dexie('planner-sync', { addons: [dexieCloud] }) as Dexie & {
@@ -104,6 +118,7 @@ export const db = new Dexie('planner-sync', { addons: [dexieCloud] }) as Dexie &
   answers: Table<Answer, string>
   days: Table<DailyText, string>
   categories: Table<Category, string>
+  bible: Table<BiblePlan, string>
   /** 예전 일일 기록 표(날짜가 기본 키). Dexie Cloud 의 id 는 모든 계정에서 유일해야 해서 days 로 옮겼다. */
   dailyText: Table<Omit<DailyText, 'id'>, string>
 }
@@ -119,13 +134,14 @@ db.version(1).stores({
 })
 db.version(2).stores({ days: 'id, date, read' })
 db.version(3).stores({ categories: 'id, color' })
+db.version(4).stores({ bible: 'id' })
 
 // 로그인해야 쓸 수 있다 — 처음 열 때 이메일 인증 화면이 뜬다.
 // 개발 중에는 ?demo=<데모 사용자> 로 열면 Dexie Cloud 데모 계정으로 바로 로그인한다 (배포 빌드에는 들어가지 않음).
 const demoUser = import.meta.env.DEV ? new URLSearchParams(location.search).get('demo') : null
 db.cloud.configure({ databaseUrl: DATABASE_URL, requireAuth: demoUser ? { grant_type: 'demo', userId: demoUser } : true, customLoginGui: true, socialAuth: false })
 
-export const TABLES = ['goals', 'tasks', 'events', 'timetable', 'questions', 'answers', 'days', 'categories'] as const
+export const TABLES = ['goals', 'tasks', 'events', 'timetable', 'questions', 'answers', 'days', 'categories', 'bible'] as const
 const LEGACY_TABLES = ['goals', 'tasks', 'events', 'timetable', 'questions', 'answers', 'dailyText'] as const
 
 /** 날짜별 기록(성구·기도·연구)의 id. 날짜만 쓰면 다른 계정과 겹쳐 서버가 거절하므로 계정 id 를 붙인다. */
@@ -140,6 +156,7 @@ export async function patchDay(date: string, patch: Partial<DailyText>) {
 /** 카테고리 이름 기록의 id (색 + 계정) */
 export const categoryId = (color: string) => `cat-${color.replace('#', '')}-${db.cloud.currentUserId}`
 export const categorySlotId = (slot: number) => `catslot${slot}-${db.cloud.currentUserId}`
+export const biblePlanId = () => `bibleplan-${db.cloud.currentUserId}`
 
 export const COLORS = ['#2f5d50', '#3b6ea5', '#b5543c', '#c58a1c', '#7a5aa6', '#4f8a3c', '#a2456e', '#5f6b73']
 /** 카테고리 색으로 고를 수 있는 색 (앞 8개가 기본 색) */
@@ -253,6 +270,7 @@ export function normalizeRows(rows: Rows): Rows {
   out.timetable = (rows.timetable ?? []).map((r) => remap(r))
   // 예전 백업의 dailyText 와 새 days 모두, 지금 계정 기준 id 로 다시 만든다
   out.days = [...(rows.dailyText ?? []), ...(rows.days ?? [])].map((r) => ({ ...strip(r), id: dayId(String(r.date)) }))
+  out.bible = (rows.bible ?? []).slice(0, 1).map((r) => ({ ...strip(r), id: biblePlanId() }))
   out.categories = (rows.categories ?? []).map((r) => ({ ...strip(r), id: r.slot != null ? categorySlotId(Number(r.slot)) : categoryId(String(r.color)) }))
   return out
 }

@@ -8,6 +8,7 @@ import { Button, Card, IconButton, PageHeader, SectionTitle, TextArea, TextInput
 import { GearIcon, PlusIcon } from '../components/icons'
 import { DailyTextCard } from '../components/DailyTextCard'
 import { ServiceCard } from '../components/ServiceCard'
+import { BibleCard } from '../components/BibleCard'
 import { AgendaList } from '../components/AgendaList'
 import { TaskRow, TaskSheet } from '../components/TaskSheet'
 import { BlockSheet, EventSheet } from '../components/ScheduleSheets'
@@ -33,6 +34,8 @@ export default function Today() {
       />
       <div className="gutter board">
         <DailyTextCard key={today} date={today} />
+
+        <BibleCard key={`b-${today}`} today={today} />
 
         <ServiceCard key={`s-${today}`} date={today} />
 
