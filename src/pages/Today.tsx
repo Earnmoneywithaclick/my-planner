@@ -58,7 +58,7 @@ export default function Today() {
       </div>
 
       {taskEdit && <TaskSheet initial={taskEdit} onClose={() => setTaskEdit(null)} />}
-      {eventEdit && <EventSheet initial={eventEdit} onClose={() => setEventEdit(null)} />}
+      {eventEdit && <EventSheet initial={eventEdit} quickDates={eventEdit.id == null} onClose={() => setEventEdit(null)} />}
       {blockEdit && <BlockSheet initial={blockEdit} onClose={() => setBlockEdit(null)} />}
     </>
   )

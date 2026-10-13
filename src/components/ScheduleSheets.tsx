@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { COLORS, db, newId, type PlanEvent, type TimetableBlock } from '../db'
-import { TIME_SLOTS, WEEKDAYS, WEEK_ORDER, timeLabel } from '../lib/date'
+import { TIME_SLOTS, WEEKDAYS, WEEK_ORDER, timeLabel, shiftKey, todayKey } from '../lib/date'
 import { Button, Select, Sheet, TextArea, TextInput } from './ui'
 import { CategoryPicker } from './Categories'
 import { DateRangePicker } from './DateRangePicker'
@@ -139,7 +139,7 @@ export function BlockSheet({ initial, onClose }: { initial: Partial<TimetableBlo
 }
 
 /** 날짜를 정한 일정 — 시작 시간을 비우면 하루 종일, 마지막 날을 고르면 며칠 이어지는 일정 */
-export function EventSheet({ initial, onClose }: { initial: Partial<PlanEvent>; onClose: () => void }) {
+export function EventSheet({ initial, onClose, quickDates = false }: { initial: Partial<PlanEvent>; onClose: () => void; quickDates?: boolean }) {
   const [ev, setEv] = useState<Partial<PlanEvent>>({ color: COLORS[3], ...initial })
   const isNew = ev.id == null
   const set = (patch: Partial<PlanEvent>) => setEv((p) => ({ ...p, ...patch }))
@@ -171,7 +171,26 @@ export function EventSheet({ initial, onClose }: { initial: Partial<PlanEvent>; 
     <Sheet open title={isNew ? '새 일정' : '일정 수정'} onClose={onClose} footer={<Footer isNew={isNew} valid={valid} onSave={save} onRemove={remove} />}>
       <TextInput autoFocus={isNew} placeholder="일정 이름" value={ev.title ?? ''} onChange={(e) => set({ title: e.target.value })} />
       {/* 한 달력에서 시작 날 → 마지막 날 차례로 탭 */}
-      <DateRangePicker start={ev.date} end={ev.endDate} awaitEnd={isNew} onChange={({ date, endDate }) => set({ date, endDate })} />
+      {quickDates ? (
+        // 오늘 화면에서 바로 추가할 때는 큰 달력 대신 오늘·내일·모레만
+        <div className="flex gap-2">
+          {(['오늘', '내일', '모레'] as const).map((label, i) => {
+            const key = shiftKey(todayKey(), i)
+            return (
+              <button
+                key={label}
+                type="button"
+                onClick={() => set({ date: key, endDate: undefined })}
+                className={`flex-1 h-11 rounded-xl text-[16px] font-semibold ${ev.date === key ? 'bg-accent text-bg' : 'bg-card-2 text-ink-2'}`}
+              >
+                {label}
+              </button>
+            )
+          })}
+        </div>
+      ) : (
+        <DateRangePicker start={ev.date} end={ev.endDate} awaitEnd={isNew} onChange={({ date, endDate }) => set({ date, endDate })} />
+      )}
       <TimeRange start={ev.start} end={ev.end} onChange={set} startEmptyLabel="하루 종일" />
       <TextArea placeholder="메모" value={ev.note ?? ''} onChange={(e) => set({ note: e.target.value })} />
       <CategoryPicker value={ev.color!} onChange={(color) => set({ color })} />
