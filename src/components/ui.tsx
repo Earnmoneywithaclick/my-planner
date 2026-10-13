@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, type ReactNode, type InputHTMLAttributes, type TextareaHTMLAttributes, type ButtonHTMLAttributes, type SelectHTMLAttributes } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type InputHTMLAttributes, type TextareaHTMLAttributes, type ButtonHTMLAttributes, type SelectHTMLAttributes } from 'react'
 import { CheckIcon } from './icons'
 import { useChanged } from '../lib/motion'
 
@@ -98,6 +98,24 @@ export function CheckCircle({ checked, onChange, color, label }: { checked: bool
 }
 
 /** 화면 아래에서 올라오는 입력 시트 */
+/** 키보드를 뺀, 실제로 보이는 화면 영역 (iOS 키보드 대응) */
+function useVisualViewport(active: boolean) {
+  const [rect, setRect] = useState<{ top: number; height: number } | null>(null)
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!active || !vv) return
+    const update = () => setRect({ top: vv.offsetTop, height: vv.height })
+    update()
+    vv.addEventListener('resize', update)
+    vv.addEventListener('scroll', update)
+    return () => {
+      vv.removeEventListener('resize', update)
+      vv.removeEventListener('scroll', update)
+    }
+  }, [active])
+  return rect
+}
+
 export function Sheet({ open, title, onClose, children, footer }: { open: boolean; title: string; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
   useEffect(() => {
     if (!open) return
@@ -127,11 +145,33 @@ export function Sheet({ open, title, onClose, children, footer }: { open: boolea
     }
   }, [open])
 
+  // iOS 는 키보드가 올라와도 화면(레이아웃) 크기는 그대로라 시트가 키보드 뒤로 숨는다.
+  // 실제로 보이는 영역(visualViewport)에 시트를 맞추고, 지금 입력하는 칸이 시트 안에서 보이게 스크롤한다.
+  const viewport = useVisualViewport(open)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = document.activeElement
+    if (!open || !(el instanceof HTMLElement) || !scrollRef.current?.contains(el)) return
+    el.scrollIntoView({ block: 'nearest' })
+  }, [open, viewport?.height])
+
   if (!open) return null
   return (
-    <div ref={rootRef} className="fixed inset-0 z-50 flex flex-col justify-end" role="dialog" aria-modal="true" aria-label={title}>
+    <div
+      ref={rootRef}
+      className="fixed inset-x-0 top-0 h-dvh z-50 flex flex-col justify-end"
+      style={viewport ? { top: viewport.top, height: viewport.height } : undefined}
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      onFocus={(e) => {
+        // 키보드가 올라오며 크기가 바뀐 뒤에 한 번 더 맞춘다
+        const el = e.target
+        setTimeout(() => el.scrollIntoView({ block: 'nearest' }), 300)
+      }}
+    >
       <div className="absolute inset-0 bg-black/60 animate-fade" onClick={onClose} />
-      <div className="relative w-full md:max-w-xl md:mx-auto bg-card rounded-t-3xl max-h-[92dvh] flex flex-col animate-sheet">
+      <div className="relative w-full md:max-w-xl md:mx-auto bg-card rounded-t-3xl max-h-[92%] flex flex-col animate-sheet">
         <div className="flex items-center justify-between px-5 pt-3 pb-2">
           <button type="button" onClick={onClose} className="h-11 text-[16px] text-ink-3 font-medium">
             닫기
@@ -139,7 +179,9 @@ export function Sheet({ open, title, onClose, children, footer }: { open: boolea
           <h2 className="text-[17px] font-bold">{title}</h2>
           <span className="w-8" />
         </div>
-        <div className="overflow-y-auto px-5 pb-4 space-y-4">{children}</div>
+        <div ref={scrollRef} className="overflow-y-auto overscroll-contain px-5 pb-4 space-y-4">
+          {children}
+        </div>
         {footer && <div className="px-5 pt-2 pb-[max(env(safe-area-inset-bottom),16px)] flex gap-2 border-t border-line">{footer}</div>}
       </div>
     </div>
