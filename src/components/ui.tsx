@@ -40,7 +40,7 @@ export function IconButton({ label, className = '', ...p }: ButtonHTMLAttributes
   return <button aria-label={label} title={label} className={`size-11 grid place-items-center rounded-full active:bg-card-2 ${className}`} {...p} />
 }
 
-const inputCls = 'w-full rounded-xl bg-card-2 px-3.5 py-2.5 min-h-12 text-ink placeholder:text-ink-3 outline-none focus:ring-2 focus:ring-accent/40'
+const inputCls = 'w-full rounded-xl bg-card-2 px-3.5 py-2.5 min-h-12 text-ink placeholder:text-ink-3 outline-none focus:ring-2 focus:ring-accent/40 scroll-my-4'
 
 export function TextInput(p: InputHTMLAttributes<HTMLInputElement>) {
   return <input {...p} className={`${inputCls} ${p.className ?? ''}`} />
@@ -179,7 +179,7 @@ export function Sheet({ open, title, onClose, children, footer }: { open: boolea
           <h2 className="text-[17px] font-bold">{title}</h2>
           <span className="w-8" />
         </div>
-        <div ref={scrollRef} className="overflow-y-auto overscroll-contain px-5 pb-4 space-y-4">
+        <div ref={scrollRef} className="overflow-y-auto overscroll-contain px-5 pt-1.5 pb-4 space-y-4">
           {children}
         </div>
         {footer && <div className="px-5 pt-2 pb-[max(env(safe-area-inset-bottom),16px)] flex gap-2 border-t border-line">{footer}</div>}
