@@ -52,7 +52,7 @@ function GuideKo() {
   return (
     <div className="gutter board">
       <Section title="이 앱은">
-        <p>계획, 시간표, 할 일, 생각해 볼 질문을 한곳에서 관리하는 앱이에요.</p>
+        <p>계획, 시간표, 일정, 할 일을 한곳에서 관리하는 앱이에요.</p>
         <Bullets
           items={[
             '기록은 계정마다 따로 저장돼서 서로 보이지 않아요.',
@@ -154,12 +154,9 @@ function GuideKo() {
         />
       </Section>
 
-      <Section title="질문과 설정">
+      <Section title="설정">
         <Bullets
           items={[
-            <>
-              질문 탭에서 질문을 눌러 답을 적고, <b>내일 · 1주 뒤 · 1달 뒤 다시</b>로 다시 볼 날을 정해요. 그날이 되면 질문 옆에 노란 점이 생겨요.
-            </>,
             <>
               <b>설정 &gt; 언어</b>: <b>한국어 · English</b> 중에서 골라요. 이 기기에만 적용돼요. 로그인 화면 오른쪽 위에서도 바꿀 수 있어요.
             </>,
@@ -199,7 +196,7 @@ function GuideEn() {
   return (
     <div className="gutter board">
       <Section title="About this app">
-        <p>Plans, schedule, to-dos and questions to reflect on — all in one place.</p>
+        <p>Plans, schedule, events and to-dos — all in one place.</p>
         <Bullets
           items={[
             'Each account’s data is kept separately, so no one else can see yours.',
@@ -301,12 +298,9 @@ function GuideEn() {
         />
       </Section>
 
-      <Section title="Questions and Settings">
+      <Section title="Settings">
         <Bullets
           items={[
-            <>
-              In the Questions tab, tap a question to answer it, and use <b>Tomorrow · In a week · In a month</b> to choose when to see it again. On that day a yellow dot appears next to it.
-            </>,
             <>
               <b>Settings &gt; Language</b>: choose <b>한국어 · English</b>. It applies to this device only. You can also switch at the top right of the login screen.
             </>,

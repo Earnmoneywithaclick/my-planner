@@ -203,26 +203,6 @@ const DEFAULT_QUESTIONS: [string, string][] = [
 // Dexie Cloud 의 id 는 모든 계정을 통틀어 유일해야 하므로 계정 id 를 붙인다.
 const defaultQuestionId = (i: number) => `qdefault${String(i + 1).padStart(2, '0')}-${uid()}`
 
-/** 이 계정에 기본 질문을 아직 넣은 적이 없으면, 없는 것만 넣는다. */
-async function seedDefaults() {
-  const flag = `planner.defaults.v2:${uid()}`
-  try {
-    if (localStorage.getItem(flag)) return
-  } catch {
-    /* 저장소 접근 불가 시에는 매번 확인한다 (있는 질문은 건드리지 않으므로 안전) */
-  }
-  const ids = DEFAULT_QUESTIONS.map((_, i) => defaultQuestionId(i))
-  const existing = await db.questions.bulkGet(ids)
-  const now = Date.now()
-  const missing = DEFAULT_QUESTIONS.map(([text, category], i) => ({ id: ids[i], text, category, pinned: 0 as const, createdAt: now + i })).filter((_, i) => !existing[i])
-  if (missing.length) await db.questions.bulkAdd(missing)
-  try {
-    localStorage.setItem(flag, '1')
-  } catch {
-    /* 무시 */
-  }
-}
-
 /** 예전 dailyText 표(날짜 기본 키)의 기록을 days 표로 옮긴다. 이미 days 에 같은 날이 있으면 그대로 둔다. */
 async function migrateDailyTextTable() {
   const old = await db.dailyText.toArray()
@@ -359,7 +339,7 @@ async function adoptGuestRecords() {
   })
 }
 
-/** 로그인 → 서버 기록 받아오기 → 옛 기록 옮기기 → 기본 질문 */
+/** 로그인 → 서버 기록 받아오기 → 옛 기록 옮기기 */
 export async function startup() {
   await db.open()
   // 저장된 로그인 정보를 다 읽을 때까지 기다린다 (그 전에는 손님처럼 보여서 손님 id 로 기록이 생길 수 있다)
@@ -377,7 +357,6 @@ export async function startup() {
   await migrateDailyTextTable()
   await repairDefaultAnswers()
   await adoptGuestRecords()
-  await seedDefaults()
   // 손님으로 쓰다가 로그인한 경우
   let wasLoggedIn = db.cloud.currentUser.value.isLoggedIn
   db.cloud.currentUser.subscribe((u) => {
@@ -385,7 +364,6 @@ export async function startup() {
     if (u.isLoggedIn && !wasLoggedIn)
       Promise.race([db.cloud.sync({ wait: true, purpose: 'pull' }).catch(() => {}), new Promise((r) => setTimeout(r, 8000))])
         .then(adoptGuestRecords)
-        .then(seedDefaults)
         .catch(() => {})
     wasLoggedIn = !!u.isLoggedIn
   })

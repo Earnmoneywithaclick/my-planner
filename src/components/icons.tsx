@@ -33,12 +33,6 @@ export const FlagIcon = (p: P) => (
     <path d="M5 21V4M5 4h11l-2 4 2 4H5" />
   </Base>
 )
-export const QuestionIcon = (p: P) => (
-  <Base {...p}>
-    <circle cx="12" cy="12" r="9" />
-    <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.6V14M12 17.5h.01" />
-  </Base>
-)
 export const PlusIcon = (p: P) => (
   <Base {...p}>
     <path d="M12 5v14M5 12h14" />

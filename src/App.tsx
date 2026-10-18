@@ -4,7 +4,6 @@ import { LoginGate } from './components/LoginGate'
 import Today from './pages/Today'
 import Timetable from './pages/Timetable'
 import Tasks from './pages/Tasks'
-import Questions from './pages/Questions'
 import Settings from './pages/Settings'
 import Guide from './pages/Guide'
 import { useLang } from './lib/i18n'
@@ -21,7 +20,8 @@ export default function App() {
           <Route path="/tasks" element={<Tasks />} />
           {/* 계획 탭은 할 일 탭에 합쳐졌다 */}
           <Route path="/plans" element={<Navigate to="/tasks" replace />} />
-          <Route path="/questions" element={<Questions />} />
+          {/* 질문 탭은 없앴다 */}
+          <Route path="/questions" element={<Navigate to="/" replace />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/guide" element={<Guide />} />
         </Routes>
