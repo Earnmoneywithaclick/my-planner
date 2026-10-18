@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, newId, type PlanEvent, type Question, type Task, type TimetableBlock } from '../db'
 import { dayHash, fmt, nowHHmm } from '../lib/date'
-import { useAgenda, useNow } from '../lib/hooks'
+import { toggleAgendaDone, useAgenda, useNow } from '../lib/hooks'
 import { Button, Card, IconButton, PageHeader, SectionTitle, TextArea, TextInput } from '../components/ui'
 import { GearIcon, PlusIcon } from '../components/icons'
 import { DailyTextCard } from '../components/DailyTextCard'
@@ -49,7 +49,7 @@ export default function Today() {
           >
             오늘 일정
           </SectionTitle>
-          <AgendaList items={agenda} now={nowHHmm()} onOpen={(it) => (it.kind === 'block' ? setBlockEdit(it.block) : setEventEdit(it.event))} />
+          <AgendaList items={agenda} now={nowHHmm()} onOpen={(it) => (it.kind === 'block' ? setBlockEdit(it.block) : setEventEdit(it.event))} onToggle={(it) => toggleAgendaDone(it, today)} />
         </Card>
 
         <TodayTasks today={today} onOpen={setTaskEdit} />

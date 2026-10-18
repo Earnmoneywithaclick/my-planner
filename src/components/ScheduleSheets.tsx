@@ -56,6 +56,24 @@ function WeekdayPicker({ days, onToggle }: { days: number[]; onToggle: (d: numbe
   )
 }
 
+/** 했는지 체크하는 일정으로 만들기 — 켜면 일정 목록 오른쪽에 체크 동그라미가 생긴다 */
+function CheckToggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={() => onChange(!on)}
+      className="w-full h-12 rounded-xl bg-card-2 px-3.5 flex items-center justify-between text-[16px] font-medium text-ink"
+    >
+      했는지 체크
+      <span className={`w-12 h-7 rounded-full p-0.5 transition-colors ${on ? 'bg-accent' : 'bg-ink-3/35'}`}>
+        <span className={`block size-6 rounded-full bg-white shadow transition-transform ${on ? 'translate-x-5' : ''}`} />
+      </span>
+    </button>
+  )
+}
+
 function Footer({ isNew, valid, onSave, onRemove }: { isNew: boolean; valid: boolean; onSave: () => void; onRemove: () => void }) {
   return (
     <>
@@ -96,7 +114,7 @@ export function BlockSheet({ initial, onClose }: { initial: Partial<TimetableBlo
   async function save() {
     if (!valid) return
     const seriesId = siblings?.find((x) => x.seriesId)?.seriesId ?? newId()
-    const base = { title: b.title!.trim(), place: b.place?.trim() || undefined, start: b.start!, end: b.end || undefined, color: b.color!, seriesId }
+    const base = { title: b.title!.trim(), place: b.place?.trim() || undefined, start: b.start!, end: b.end || undefined, color: b.color!, check: b.check || undefined, seriesId }
     await db.transaction('rw', db.timetable, async () => {
       // 요일마다 하나씩만 남기고 고친다. 빠진 요일은 지우고, 새로 고른 요일은 추가한다.
       const keep = new Map<number, TimetableBlock>()
@@ -133,6 +151,7 @@ export function BlockSheet({ initial, onClose }: { initial: Partial<TimetableBlo
       <WeekdayPicker days={days} onToggle={toggleDay} />
       <TimeRange start={b.start} end={b.end} onChange={set} />
       <TextInput placeholder="장소" value={b.place ?? ''} onChange={(e) => set({ place: e.target.value })} />
+      <CheckToggle on={!!b.check} onChange={(check) => set({ check })} />
       <CategoryPicker value={b.color!} onChange={(color) => set({ color })} />
     </Sheet>
   )
@@ -155,6 +174,7 @@ export function EventSheet({ initial, onClose, quickDates = false }: { initial: 
       end: (ev.start && ev.end) || undefined,
       note: ev.note?.trim() || undefined,
       color: ev.color!,
+      check: ev.check || undefined,
     }
     if (isNew) await db.events.add({ ...data, id: newId(), createdAt: Date.now() })
     else await db.events.update(ev.id!, data)
@@ -192,6 +212,7 @@ export function EventSheet({ initial, onClose, quickDates = false }: { initial: 
         <DateRangePicker start={ev.date} end={ev.endDate} awaitEnd={isNew} onChange={({ date, endDate }) => set({ date, endDate })} />
       )}
       <TimeRange start={ev.start} end={ev.end} onChange={set} startEmptyLabel="하루 종일" />
+      <CheckToggle on={!!ev.check} onChange={(check) => set({ check })} />
       <TextArea placeholder="메모" value={ev.note ?? ''} onChange={(e) => set({ note: e.target.value })} />
       <CategoryPicker value={ev.color!} onChange={(color) => set({ color })} />
     </Sheet>

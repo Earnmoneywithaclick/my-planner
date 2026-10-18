@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type PlanEvent, type TimetableBlock } from '../db'
 import { WEEKDAYS, WEEK_ORDER, fmt, friendlyDate, fromKey, nowHHmm, shiftKey, shortTime } from '../lib/date'
-import { type AgendaItem, useAgenda, useNow } from '../lib/hooks'
+import { type AgendaItem, useAgenda, useNow, toggleAgendaDone } from '../lib/hooks'
 import { Card, IconButton, PageHeader, SectionTitle, Segmented } from '../components/ui'
 import { PlusIcon } from '../components/icons'
 import { AgendaList } from '../components/AgendaList'
@@ -86,7 +86,7 @@ function DayView({
       <MonthCalendar today={today} selected={selected} onSelect={onSelect} onAdd={(d) => onEvent({ date: d })} />
       <Card>
         <SectionTitle>{friendlyDate(selected)}</SectionTitle>
-        <AgendaList items={agenda} now={selected === today ? nowHHmm() : undefined} onOpen={(it) => (it.kind === 'block' ? onBlock(it.block) : onEvent(it.event))} />
+        <AgendaList items={agenda} now={selected === today ? nowHHmm() : undefined} onOpen={(it) => (it.kind === 'block' ? onBlock(it.block) : onEvent(it.event))} onToggle={(it) => toggleAgendaDone(it, selected)} />
       </Card>
       {!!upcoming?.length && (
         <Card>

@@ -39,6 +39,8 @@ export interface PlanEvent {
   end?: string
   note?: string
   color: string
+  check?: boolean // 했는지 체크하는 일정
+  doneDates?: string[] // 체크한 날짜들 (며칠짜리는 날마다 따로)
   createdAt: number
 }
 
@@ -51,6 +53,8 @@ export interface TimetableBlock {
   title: string
   place?: string
   color: string
+  check?: boolean // 했는지 체크하는 일정
+  doneDates?: string[] // 체크한 날짜들 (반복 일정은 날마다 따로)
 }
 
 export interface Question {
