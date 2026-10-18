@@ -4,7 +4,6 @@ import type { DXCAlert } from 'dexie-cloud-addon'
 import { db } from '../db'
 import { Button, TextInput } from './ui'
 import { setLang, t, useLang } from '../lib/i18n'
-import { setGuest, useGuest } from '../lib/guest'
 
 const notRegistered = () => t('등록되지 않은 이메일이에요. 관리자에게 등록을 부탁하세요.', 'This email isn’t registered. Ask the admin to add it.')
 const seatsFull = () => t('사용자 자리가 다 찼어요. 관리자에게 알려주세요.', 'No user seats left. Please tell the admin.')
@@ -39,34 +38,13 @@ function LangSwitch() {
 /** Dexie Cloud 로그인(이메일 → 인증 코드) 화면. 기본 영어 대화상자 대신 앱 화면으로 보여준다. */
 export function LoginGate() {
   const ui = useObservable(db.cloud.userInteraction)
-  const user = useObservable(db.cloud.currentUser)
-  const guest = useGuest()
   const [value, setValue] = useState('')
   useEffect(() => setValue(''), [ui?.type])
 
   const startLogin = () => db.cloud.login().catch(() => {})
 
-  // 로그인하지 않았고 '로그인 없이 쓰기'도 고르지 않았으면 로그인 화면 (취소했거나 거절당한 경우 포함)
-  if (!ui) {
-    if (!user || user.isLoggedIn || user.isLoading || guest) return null
-    return (
-      <div className="fixed inset-0 z-[60] bg-bg flex flex-col justify-center px-6 pt-safe pb-safe" role="dialog" aria-modal="true" aria-label={t('로그인', 'Log in')}>
-        <LangSwitch />
-        <div className="space-y-4 max-w-sm w-full mx-auto">
-          <h1 className="text-[28px] font-bold">{t('로그인', 'Log in')}</h1>
-          <Button className="w-full" onClick={startLogin}>
-            {t('이메일로 로그인', 'Log in with email')}
-          </Button>
-          <Button variant="ghost" className="w-full" onClick={() => setGuest(true)}>
-            {t('로그인 없이 쓰기', 'Use without logging in')}
-          </Button>
-          <p className="text-[16px] leading-relaxed text-ink-2">
-            {t('로그인 없이 쓰면 기록이 이 기기에만 저장돼요. 나중에 설정에서 로그인하면 그때까지의 기록도 함께 올라가요.', 'Without logging in, your data stays on this device only. Log in later from Settings and it will be uploaded to your account.')}
-          </p>
-        </div>
-      </div>
-    )
-  }
+  // 처음에는 로그인 없이(손님으로) 쓰고, 설정에서 이메일로 로그인할 때만 이 화면이 뜬다
+  if (!ui) return null
 
   const isEmail = ui.type === 'email'
   const isOtp = ui.type === 'otp'
@@ -104,7 +82,7 @@ export function LoginGate() {
         <Button type="submit" className="w-full" disabled={(isEmail || isOtp) && !value.trim()}>
           {submitLabel}
         </Button>
-        {(isOtp || ui.type === 'logout-confirmation') && (
+        {(isEmail || isOtp || ui.type === 'logout-confirmation') && (
           <Button
             type="button"
             variant="ghost"

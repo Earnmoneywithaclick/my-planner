@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db, newId, type PlanEvent, type Question, type Task, type TimetableBlock } from '../db'
-import { dayHash, fmt, nowHHmm } from '../lib/date'
+import { db, newId, type PlanEvent, type Task, type TimetableBlock } from '../db'
+import { fmt, nowHHmm } from '../lib/date'
 import { toggleAgendaDone, useAgenda, useNow } from '../lib/hooks'
-import { Button, Card, IconButton, PageHeader, SectionTitle, TextArea, TextInput } from '../components/ui'
+import { Button, Card, IconButton, PageHeader, SectionTitle, TextInput } from '../components/ui'
 import { GearIcon, PlusIcon } from '../components/icons'
 import { DailyTextCard } from '../components/DailyTextCard'
 import { ServiceCard } from '../components/ServiceCard'
@@ -12,9 +12,8 @@ import { BibleCard } from '../components/BibleCard'
 import { AgendaList } from '../components/AgendaList'
 import { TaskRow, TaskSheet } from '../components/TaskSheet'
 import { BlockSheet, EventSheet } from '../components/ScheduleSheets'
-import { QuestionSheet, saveAnswer } from '../components/QuestionSheet'
 import { AnimatedList } from '../components/Animated'
-import { questionText, t } from '../lib/i18n'
+import { t } from '../lib/i18n'
 
 export default function Today() {
   const { today } = useNow()
@@ -54,8 +53,6 @@ export default function Today() {
         </Card>
 
         <TodayTasks today={today} onOpen={setTaskEdit} />
-
-        <TodayQuestion today={today} />
       </div>
 
       {taskEdit && <TaskSheet initial={taskEdit} onClose={() => setTaskEdit(null)} />}
@@ -105,69 +102,6 @@ function TodayTasks({ today, onOpen }: { today: string; onOpen: (t: Partial<Task
           ))}
         </AnimatedList>
       )}
-    </Card>
-  )
-}
-
-function TodayQuestion({ today }: { today: string }) {
-  const [offset, setOffset] = useState(0)
-  const [answer, setAnswer] = useState('')
-  const [open, setOpen] = useState<Question | null>(null)
-  const data = useLiveQuery(async () => {
-    const qs = await db.questions.toArray()
-    if (qs.length === 0) return { q: undefined, review: false, answered: [] as string[] }
-    // '다시 보기'로 예약된 질문이 먼저, 없으면 고정 질문 중에서, 그것도 없으면 전체에서 날짜마다 돌아가며
-    const due = qs.filter((q) => q.nextReview && q.nextReview <= today).sort((a, b) => a.nextReview!.localeCompare(b.nextReview!))
-    const pinned = qs.filter((q) => q.pinned)
-    const pool = due.length ? due : pinned.length ? pinned : qs
-    // 오늘 이미 답한 질문이 있으면 그 질문을 계속 보여준다 (답하면 다시 보기 예약이 풀려 목록이 바뀌므로)
-    const answeredToday = await db.answers.where('date').equals(today).last()
-    const q = (offset === 0 && answeredToday && qs.find((x) => x.id === answeredToday.questionId)) || pool[(dayHash(today) + offset) % pool.length]
-    const answered = (await db.answers.where('questionId').equals(q.id!).filter((a) => a.date === today).toArray()).map((a) => a.text)
-    return { q, review: due.includes(q), answered }
-  }, [today, offset])
-
-  if (!data?.q) return null
-  const q = data.q
-  return (
-    <Card>
-      <SectionTitle
-        right={
-          <button type="button" onClick={() => setOffset((o) => o + 1)} className="text-[15px] font-semibold text-accent h-11 -my-2">
-            {t('다른 질문', 'Another question')}
-          </button>
-        }
-      >
-        {data.review ? t('다시 생각해 볼 질문', 'Question to revisit') : t('오늘의 질문', 'Today’s question')}
-      </SectionTitle>
-      <button type="button" onClick={() => setOpen(q)} className="text-left w-full text-[19px] font-bold leading-snug">
-        {questionText(q.text)}
-      </button>
-      {data.answered.length > 0 ? (
-        <div className="mt-3 space-y-2">
-          {data.answered.map((t, i) => (
-            <p key={i} className="bg-card-2 rounded-xl p-3.5 text-[16px] whitespace-pre-wrap leading-relaxed animate-fade">
-              {t}
-            </p>
-          ))}
-        </div>
-      ) : (
-        <div className="mt-3 space-y-2">
-          <TextArea value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder={t('생각 적기', 'Write your thoughts')} />
-          <Button
-            variant="soft"
-            className="w-full"
-            disabled={!answer.trim()}
-            onClick={async () => {
-              await saveAnswer(q, answer)
-              setAnswer('')
-            }}
-          >
-            {t('답 저장', 'Save answer')}
-          </Button>
-        </div>
-      )}
-      {open && <QuestionSheet initial={open} onClose={() => setOpen(null)} />}
     </Card>
   )
 }

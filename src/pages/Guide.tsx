@@ -62,8 +62,7 @@ function GuideKo() {
         />
       </Section>
 
-      <Section title="설치와 등록">
-        <p>등록된 이메일만 로그인할 수 있어요.</p>
+      <Section title="설치와 시작">
         <Steps
           items={[
             <>
@@ -80,17 +79,22 @@ function GuideKo() {
               <b>홈 화면에 추가</b> → <b>추가</b>를 눌러요.
             </>,
             <>
-              홈 화면의 <b>플래너</b> 아이콘으로 열어요.
-            </>,
-            <>
-              이메일을 입력하고 <b>인증 코드 받기</b> → 메일로 온 코드를 넣고 <b>로그인</b>.
+              홈 화면의 <b>플래너</b> 아이콘으로 열면 로그인 없이 바로 시작돼요.
             </>,
           ]}
         />
-        <p>아이패드도 같은 방법으로 추가하고 같은 이메일로 로그인하면 돼요.</p>
-        <p>
-          <b>로그인 없이 쓰기</b>를 누르면 이메일 인증 없이 바로 쓸 수 있어요. 대신 기록이 그 기기에만 저장되고 다른 기기와 맞춰지지 않아요. 나중에 <b>설정 &gt; 동기화</b>에서 <b>이메일로 로그인</b>하면 그때까지의 기록이 계정으로 함께 올라가요.
-        </p>
+        <p>처음에는 기록이 그 기기에만 저장돼요. 아이패드 등 다른 기기와 맞추려면:</p>
+        <Steps
+          items={[
+            <>
+              <b>설정 &gt; 동기화</b>에서 <b>이메일로 로그인</b>을 눌러요. 등록된 이메일만 로그인할 수 있어요.
+            </>,
+            <>
+              이메일을 입력하고 <b>인증 코드 받기</b> → 메일로 온 코드를 넣고 <b>로그인</b>. 그때까지의 기록이 계정으로 함께 올라가요.
+            </>,
+            <>다른 기기에서도 같은 이메일로 로그인하면 기록이 맞춰져요.</>,
+          ]}
+        />
       </Section>
 
       <Section title="오늘 화면">
@@ -116,9 +120,6 @@ function GuideKo() {
             </>,
             <>
               <b>오늘 할 일</b>: 적고 + 버튼. 동그라미를 누르면 완료.
-            </>,
-            <>
-              <b>오늘의 질문</b>: 생각을 적고 <b>답 저장</b>. 다른 걸 보려면 <b>다른 질문</b>.
             </>,
           ]}
         />
@@ -157,7 +158,7 @@ function GuideKo() {
         <Bullets
           items={[
             <>
-              질문을 눌러 답을 적고, <b>내일 · 1주 뒤 · 1달 뒤 다시</b>로 다시 볼 날을 정해요.
+              질문 탭에서 질문을 눌러 답을 적고, <b>내일 · 1주 뒤 · 1달 뒤 다시</b>로 다시 볼 날을 정해요. 그날이 되면 질문 옆에 노란 점이 생겨요.
             </>,
             <>
               <b>설정 &gt; 언어</b>: <b>한국어 · English</b> 중에서 골라요. 이 기기에만 적용돼요. 로그인 화면 오른쪽 위에서도 바꿀 수 있어요.
@@ -208,8 +209,7 @@ function GuideEn() {
         />
       </Section>
 
-      <Section title="Install and sign in">
-        <p>Only registered emails can log in.</p>
+      <Section title="Install and start">
         <Steps
           items={[
             <>
@@ -226,17 +226,22 @@ function GuideEn() {
               Tap <b>Add to Home Screen</b> → <b>Add</b>.
             </>,
             <>
-              Open the app from the <b>플래너</b> icon on your Home Screen.
-            </>,
-            <>
-              Enter your email, tap <b>Get code</b>, enter the code from the email and tap <b>Log in</b>. Tap <b>English</b> at the top right to switch the language first.
+              Open the app from the <b>플래너</b> icon on your Home Screen — it starts right away, no login needed.
             </>,
           ]}
         />
-        <p>On iPad, add it the same way and log in with the same email.</p>
-        <p>
-          Tap <b>Use without logging in</b> to start right away without email verification. Your data then stays on that device only and doesn’t sync. Later, tap <b>Log in with email</b> in <b>Settings &gt; Sync</b> and everything so far is uploaded to your account.
-        </p>
+        <p>At first your data is stored on that device only. To sync with an iPad or other devices:</p>
+        <Steps
+          items={[
+            <>
+              In <b>Settings &gt; Sync</b>, tap <b>Log in with email</b>. Only registered emails can log in.
+            </>,
+            <>
+              Enter your email, tap <b>Get code</b>, enter the code from the email and tap <b>Log in</b>. Everything so far is uploaded to your account.
+            </>,
+            <>Log in with the same email on your other devices and they stay in sync.</>,
+          ]}
+        />
       </Section>
 
       <Section title="Today">
@@ -262,9 +267,6 @@ function GuideEn() {
             </>,
             <>
               <b>Today’s to-dos</b>: type and tap +. Tap the circle to complete.
-            </>,
-            <>
-              <b>Today’s question</b>: write your thoughts and tap <b>Save answer</b>. For a different one, tap <b>Another question</b>.
             </>,
           ]}
         />
@@ -303,7 +305,7 @@ function GuideEn() {
         <Bullets
           items={[
             <>
-              Tap a question to answer it, and use <b>Tomorrow · In a week · In a month</b> to choose when to see it again.
+              In the Questions tab, tap a question to answer it, and use <b>Tomorrow · In a week · In a month</b> to choose when to see it again. On that day a yellow dot appears next to it.
             </>,
             <>
               <b>Settings &gt; Language</b>: choose <b>한국어 · English</b>. It applies to this device only. You can also switch at the top right of the login screen.
