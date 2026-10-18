@@ -88,6 +88,9 @@ function GuideKo() {
           ]}
         />
         <p>아이패드도 같은 방법으로 추가하고 같은 이메일로 로그인하면 돼요.</p>
+        <p>
+          <b>로그인 없이 쓰기</b>를 누르면 이메일 인증 없이 바로 쓸 수 있어요. 대신 기록이 그 기기에만 저장되고 다른 기기와 맞춰지지 않아요. 나중에 <b>설정 &gt; 동기화</b>에서 <b>이메일로 로그인</b>하면 그때까지의 기록이 계정으로 함께 올라가요.
+        </p>
       </Section>
 
       <Section title="오늘 화면">
@@ -231,6 +234,9 @@ function GuideEn() {
           ]}
         />
         <p>On iPad, add it the same way and log in with the same email.</p>
+        <p>
+          Tap <b>Use without logging in</b> to start right away without email verification. Your data then stays on that device only and doesn’t sync. Later, tap <b>Log in with email</b> in <b>Settings &gt; Sync</b> and everything so far is uploaded to your account.
+        </p>
       </Section>
 
       <Section title="Today">

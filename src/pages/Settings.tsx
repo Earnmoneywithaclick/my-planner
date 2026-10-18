@@ -7,6 +7,7 @@ import { Button, Card, PageHeader, SectionTitle, Segmented, TextInput } from '..
 import { recolorCategory, renameCategory, useCategories } from '../components/Categories'
 import { ChevronLeft, ChevronRight } from '../components/icons'
 import { setLang, t, useLang } from '../lib/i18n'
+import { setGuest } from '../lib/guest'
 
 const BACKUP_APP = 'my-planner'
 
@@ -75,7 +76,17 @@ function SyncCard() {
     <Card>
       <SectionTitle right={<span className={`text-[15px] font-semibold ${status === 'error' ? 'text-danger' : 'text-accent'}`}>{syncLabel()[status] ?? status}</span>}>{t('동기화', 'Sync')}</SectionTitle>
       {user?.isLoggedIn && <p className="text-[16px] mb-3 break-all">{user.email}</p>}
-      <div className="flex gap-2">
+      {user && !user.isLoggedIn && !user.isLoading && (
+        <>
+          <p className="text-[16px] leading-relaxed text-ink-2 mb-3">
+            {t('로그인하지 않아서 기록이 이 기기에만 저장돼요. 로그인하면 지금까지의 기록이 계정으로 올라가고 다른 기기와 맞춰져요.', 'You’re not logged in, so your data is stored on this device only. Log in to upload it to your account and sync with other devices.')}
+          </p>
+          <Button className="w-full" onClick={() => db.cloud.login().catch(() => {})}>
+            {t('이메일로 로그인', 'Log in with email')}
+          </Button>
+        </>
+      )}
+      <div className={`flex gap-2 ${user?.isLoggedIn ? '' : 'hidden'}`}>
         <Button
           variant="soft"
           className="flex-1"
@@ -95,7 +106,10 @@ function SyncCard() {
           <Button
             variant="ghost"
             onClick={async () => {
-              if (confirm(t('로그아웃할까요? 이 기기의 기록은 지워지고, 다시 로그인하면 받아와요.', 'Log out? Data on this device will be cleared and downloaded again when you log back in.'))) await db.cloud.logout()
+              if (confirm(t('로그아웃할까요? 이 기기의 기록은 지워지고, 다시 로그인하면 받아와요.', 'Log out? Data on this device will be cleared and downloaded again when you log back in.'))) {
+                await db.cloud.logout()
+                setGuest(false)
+              }
             }}
           >
             {t('로그아웃', 'Log out')}
