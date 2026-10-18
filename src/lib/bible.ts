@@ -1,5 +1,19 @@
+import { t } from './i18n'
+
+const BOOKS_EN = [
+  'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy', 'Joshua', 'Judges', 'Ruth',
+  '1 Samuel', '2 Samuel', '1 Kings', '2 Kings', '1 Chronicles', '2 Chronicles', 'Ezra', 'Nehemiah',
+  'Esther', 'Job', 'Psalms', 'Proverbs', 'Ecclesiastes', 'Song of Solomon', 'Isaiah', 'Jeremiah',
+  'Lamentations', 'Ezekiel', 'Daniel', 'Hosea', 'Joel', 'Amos', 'Obadiah', 'Jonah',
+  'Micah', 'Nahum', 'Habakkuk', 'Zephaniah', 'Haggai', 'Zechariah', 'Malachi',
+  'Matthew', 'Mark', 'Luke', 'John', 'Acts', 'Romans', '1 Corinthians', '2 Corinthians',
+  'Galatians', 'Ephesians', 'Philippians', 'Colossians', '1 Thessalonians', '2 Thessalonians', '1 Timothy', '2 Timothy',
+  'Titus', 'Philemon', 'Hebrews', 'James', '1 Peter', '2 Peter', '1 John', '2 John',
+  '3 John', 'Jude', 'Revelation',
+]
+
 // 신세계역 연구용 성경 (jw.org) 기준 책 이름과 장 수. 책 번호 = 배열 순서 + 1.
-export const BOOKS: { name: string; chapters: number }[] = [
+export const BOOKS: { name: string; chapters: number; nameEn: string }[] = [
   ['창세기', 50], ['출애굽기', 40], ['레위기', 27], ['민수기', 36], ['신명기', 34], ['여호수아', 24], ['사사기', 21], ['룻기', 4],
   ['사무엘상', 31], ['사무엘하', 24], ['열왕기상', 22], ['열왕기하', 25], ['역대기상', 29], ['역대기하', 36], ['에스라', 10], ['느헤미야', 13],
   ['에스더', 10], ['욥기', 42], ['시편', 150], ['잠언', 31], ['전도서', 12], ['솔로몬의 노래', 8], ['이사야', 66], ['예레미야', 52],
@@ -9,13 +23,16 @@ export const BOOKS: { name: string; chapters: number }[] = [
   ['갈라디아서', 6], ['에베소서', 6], ['빌립보서', 4], ['골로새서', 4], ['데살로니가 전서', 5], ['데살로니가 후서', 3], ['디모데 전서', 6], ['디모데 후서', 4],
   ['디도서', 3], ['빌레몬서', 1], ['히브리서', 13], ['야고보서', 5], ['베드로 전서', 5], ['베드로 후서', 3], ['요한 1서', 5], ['요한 2서', 1],
   ['요한 3서', 1], ['유다서', 1], ['요한 계시록', 22],
-].map(([name, chapters]) => ({ name: name as string, chapters: chapters as number }))
+].map(([name, chapters], i) => ({ name: name as string, chapters: chapters as number, nameEn: BOOKS_EN[i] }))
+
+/** 지금 언어의 책 이름 (책 번호는 1부터) */
+export const bookName = (book: number) => t(BOOKS[book - 1].name, BOOKS[book - 1].nameEn)
 
 /** 읽기 범위 빠른 선택 */
-export const SCOPES = [
-  { label: '성경 전체', from: 1, to: 66 },
-  { label: '히브리어-아람어 성경', from: 1, to: 39 },
-  { label: '그리스도인 그리스어 성경', from: 40, to: 66 },
+export const scopes = () => [
+  { label: t('성경 전체', 'Entire Bible'), from: 1, to: 66 },
+  { label: t('히브리어-아람어 성경', 'Hebrew-Aramaic Scriptures'), from: 1, to: 39 },
+  { label: t('그리스도인 그리스어 성경', 'Christian Greek Scriptures'), from: 40, to: 66 },
 ]
 
 export type Chapter = { book: number; chapter: number }
@@ -29,9 +46,10 @@ export function chaptersOf(fromBook: number, toBook: number): Chapter[] {
 
 /** '창세기 4–6장', '시편 119장', '창세기 50장 – 출애굽기 2장' */
 export function rangeLabel(from: Chapter, to: Chapter) {
-  const a = BOOKS[from.book - 1].name
-  if (from.book === to.book) return from.chapter === to.chapter ? `${a} ${from.chapter}장` : `${a} ${from.chapter}–${to.chapter}장`
-  return `${a} ${from.chapter}장 – ${BOOKS[to.book - 1].name} ${to.chapter}장`
+  const a = bookName(from.book)
+  const ch = t('장', '')
+  if (from.book === to.book) return from.chapter === to.chapter ? `${a} ${from.chapter}${ch}` : `${a} ${from.chapter}–${to.chapter}${ch}`
+  return `${a} ${from.chapter}${ch} – ${bookName(to.book)} ${to.chapter}${ch}`
 }
 
 const verseCode = (book: number, chapter: number, verse: number) => `${String(book).padStart(2, '0')}${String(chapter).padStart(3, '0')}${String(verse).padStart(3, '0')}`
@@ -43,5 +61,5 @@ const verseCode = (book: number, chapter: number, verse: number) => `${String(bo
 export function readingUrl(from: Chapter, to: Chapter = from) {
   const end = to.book === from.book ? to.chapter : from.chapter
   const range = `${verseCode(from.book, from.chapter, 1)}-${verseCode(from.book, end, 999)}`
-  return `https://www.jw.org/finder?srcid=jwlshare&wtlocale=KO&prefer=lang&pub=nwtsty&bible=${range}`
+  return `https://www.jw.org/finder?srcid=jwlshare&wtlocale=${t('KO', 'E')}&prefer=lang&pub=nwtsty&bible=${range}`
 }

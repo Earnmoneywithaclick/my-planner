@@ -8,6 +8,7 @@ import { ChevronRight, ListPlusIcon, MoreIcon, PlusIcon } from '../components/ic
 import { BulkTaskSheet, TaskRow, TaskSheet } from '../components/TaskSheet'
 import { GoalSheet } from '../components/GoalSheet'
 import { AnimatedDiv, AnimatedList } from '../components/Animated'
+import { t as tr } from '../lib/i18n'
 
 // 접어 둔 카드는 이 기기에만 기억한다
 const COLLAPSED_KEY = 'planner.tasks.collapsed'
@@ -20,12 +21,12 @@ function loadCollapsed(): Set<string> {
 }
 
 type Filter = 'open' | 'today' | 'upcoming' | 'nodate' | 'done'
-const FILTERS: { value: Filter; label: string }[] = [
-  { value: 'open', label: '전체' },
-  { value: 'today', label: '오늘까지' },
-  { value: 'upcoming', label: '예정' },
-  { value: 'nodate', label: '마감 없음' },
-  { value: 'done', label: '완료' },
+const filters = (): { value: Filter; label: string }[] => [
+  { value: 'open', label: tr('전체', 'All') },
+  { value: 'today', label: tr('오늘까지', 'Due today') },
+  { value: 'upcoming', label: tr('예정', 'Upcoming') },
+  { value: 'nodate', label: tr('마감 없음', 'No date') },
+  { value: 'done', label: tr('완료', 'Done') },
 ]
 
 type Group = { key: string; label: string; items: Task[]; danger?: boolean; goal?: Goal; progress?: { done: number; total: number } }
@@ -61,20 +62,20 @@ export default function Tasks() {
   return (
     <>
       <PageHeader
-        title="할 일"
+        title={tr('할 일', 'To-do')}
         right={
           <div className="flex gap-2">
-            <IconButton label="묶음으로 추가" className="bg-accent-soft text-accent" onClick={() => setBulk('')}>
+            <IconButton label={tr('묶음으로 추가', 'Add as a list')} className="bg-accent-soft text-accent" onClick={() => setBulk('')}>
               <ListPlusIcon />
             </IconButton>
-            <IconButton label="할 일 추가" className="bg-accent text-bg" onClick={() => setEdit({ dueDate: filter === 'today' ? today : undefined })}>
+            <IconButton label={tr('할 일 추가', 'Add a to-do')} className="bg-accent text-bg" onClick={() => setEdit({ dueDate: filter === 'today' ? today : undefined })}>
               <PlusIcon />
             </IconButton>
           </div>
         }
       />
       <div className="flex gap-2 overflow-x-auto no-scrollbar gutter pb-3">
-        {FILTERS.map((f) => (
+        {filters().map((f) => (
           <Chip key={f.value} active={filter === f.value} onClick={() => setFilter(f.value)}>
             {f.label}
           </Chip>
@@ -96,11 +97,11 @@ export default function Tasks() {
                 </button>
                 {g.goal && (
                   <>
-                    <IconButton label={`${g.label} 수정`} className="-my-2 text-ink-3" onClick={() => setGoalEdit(g.goal!)}>
+                    <IconButton label={tr(`${g.label} 수정`, `Edit ${g.label}`)} className="-my-2 text-ink-3" onClick={() => setGoalEdit(g.goal!)}>
                       <MoreIcon />
                     </IconButton>
                     {g.goal.status === 'active' && (
-                      <IconButton label={`${g.label}에 추가`} className="-my-2 -mr-2 text-accent" onClick={() => setBulk(g.label)}>
+                      <IconButton label={tr(`${g.label}에 추가`, `Add to ${g.label}`)} className="-my-2 -mr-2 text-accent" onClick={() => setBulk(g.label)}>
                         <PlusIcon />
                       </IconButton>
                     )}
@@ -145,7 +146,7 @@ function groupTasks(tasks: Task[], filter: Filter, today: string, goals: Map<str
     const done = tasks.filter((t) => t.done && !inClosedGoal(t)).sort((a, b) => (b.doneAt ?? 0) - (a.doneAt ?? 0))
     const closedGoals = [...goals.values()].filter((g) => g.status !== 'active').sort(byCreated)
     return [
-      ...(done.length ? [{ key: 'done', label: '완료한 일', items: done.slice(0, 100) }] : []),
+      ...(done.length ? [{ key: 'done', label: tr('완료한 일', 'Completed'), items: done.slice(0, 100) }] : []),
       ...closedGoals.map((g) => ({
         key: g.id,
         label: g.title,
@@ -167,7 +168,7 @@ function groupTasks(tasks: Task[], filter: Filter, today: string, goals: Map<str
   const weekEnd = shiftKey(today, 7)
   const upcomingGroups: Group[] = []
   for (const t of upcoming) {
-    const label = t.dueDate! <= weekEnd ? friendlyDate(t.dueDate!) : '나중에'
+    const label = t.dueDate! <= weekEnd ? friendlyDate(t.dueDate!) : tr('나중에', 'Later')
     const last = upcomingGroups[upcomingGroups.length - 1]
     if (last?.label === label) last.items.push(t)
     else upcomingGroups.push({ key: `d-${label}`, label, items: [t] })
@@ -181,14 +182,14 @@ function groupTasks(tasks: Task[], filter: Filter, today: string, goals: Map<str
   const loose = noDate.filter((t) => !t.goalId || !goals.has(t.goalId))
 
   const dated: (Group & { in: Filter[] })[] = [
-    { key: 'overdue', label: '기한 지남', items: overdue, danger: true, in: ['open', 'today'] },
-    { key: 'today', label: '오늘', items: dueToday, in: ['open', 'today'] },
+    { key: 'overdue', label: tr('기한 지남', 'Overdue'), items: overdue, danger: true, in: ['open', 'today'] },
+    { key: 'today', label: tr('오늘', 'Today'), items: dueToday, in: ['open', 'today'] },
     ...upcomingGroups.map((g) => ({ ...g, in: ['open', 'upcoming'] as Filter[] })),
   ]
   const showGroups = filter === 'open' || filter === 'nodate'
   return [
     ...dated.filter((g) => g.items.length > 0 && g.in.includes(filter)),
     ...(showGroups ? goalGroups : []),
-    ...(showGroups && loose.length ? [{ key: 'loose', label: '마감 없음', items: loose }] : []),
+    ...(showGroups && loose.length ? [{ key: 'loose', label: tr('마감 없음', 'No date'), items: loose }] : []),
   ]
 }

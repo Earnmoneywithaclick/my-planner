@@ -2,11 +2,12 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { addDays, addMonths, endOfMonth, endOfWeek, startOfMonth, startOfWeek } from 'date-fns'
 import { db, type PlanEvent } from '../db'
-import { WEEKDAYS, WEEK_ORDER, fmt, fromKey, toKey } from '../lib/date'
+import { weekdayShort, WEEK_ORDER, fmt, fromKey, toKey } from '../lib/date'
 import { Card, IconButton } from './ui'
 import { ChevronLeft, ChevronRight } from './icons'
 import { CategoryLegend } from './Categories'
 import { AnimatedSpan } from './Animated'
+import { t } from '../lib/i18n'
 
 const MAX_PER_DAY = 6
 const MAX_LANES = 3
@@ -138,20 +139,20 @@ export function MonthCalendar({ today, selected, onSelect, onAdd }: { today: str
   return (
     <Card className="span-all !px-1 md:!px-2 !py-3">
       <div className="flex items-center justify-between px-1 mb-1">
-        <IconButton label="이전 달" onClick={() => goMonth(-1)}>
+        <IconButton label={t('이전 달', 'Previous month')} onClick={() => goMonth(-1)}>
           <ChevronLeft />
         </IconButton>
         <button type="button" onClick={() => onSelect(today)} className="text-[17px] font-bold h-11 px-2">
           {fmt(toKey(month), 'yyyy년 M월')}
         </button>
-        <IconButton label="다음 달" onClick={() => goMonth(1)}>
+        <IconButton label={t('다음 달', 'Next month')} onClick={() => goMonth(1)}>
           <ChevronRight />
         </IconButton>
       </div>
       <div className="grid grid-cols-7">
         {WEEK_ORDER.map((wd) => (
           <span key={wd} className={`text-center text-[15px] font-semibold pb-1.5 ${wd === 0 ? 'text-danger' : 'text-ink-3'}`}>
-            {WEEKDAYS[wd]}
+            {weekdayShort(wd)}
           </span>
         ))}
       </div>

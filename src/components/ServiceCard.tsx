@@ -7,13 +7,14 @@ import { useChanged } from '../lib/motion'
 import { Card, IconButton, Sheet, TextInput } from './ui'
 import { BagIcon, ChevronLeft, ChevronRight } from './icons'
 import { AnimatedList, FlashLi } from './Animated'
+import { t } from '../lib/i18n'
 
 /** 90 → '1시간 30분', 45 → '45분', 0 → '0분' */
 export function formatMinutes(min: number) {
   const h = Math.floor(min / 60)
   const m = min % 60
-  if (!h) return `${m}분`
-  return m ? `${h}시간 ${m}분` : `${h}시간`
+  if (!h) return t(`${m}분`, `${m}m`)
+  return m ? t(`${h}시간 ${m}분`, `${h}h ${m}m`) : t(`${h}시간`, `${h}h`)
 }
 
 /** 그 날 봉사 시간을 delta 분만큼 더하거나 뺀다 (0 아래로는 내려가지 않음) */
@@ -36,10 +37,10 @@ function useServiceMonth(monthStart: string) {
 /** 15분 단위로 더하고 빼는 버튼들 */
 function Steps({ date, withMinus = true }: { date: string; withMinus?: boolean }) {
   const steps: [string, number][] = [
-    ...(withMinus ? ([['−15분', -15]] as [string, number][]) : []),
-    ['+15분', 15],
-    ['+30분', 30],
-    ['+1시간', 60],
+    ...(withMinus ? ([[t('−15분', '−15m'), -15]] as [string, number][]) : []),
+    [t('+15분', '+15m'), 15],
+    [t('+30분', '+30m'), 30],
+    [t('+1시간', '+1h'), 60],
   ]
   return (
     <div className="flex gap-2">
@@ -70,15 +71,15 @@ export function ServiceCard({ date }: { date: string }) {
       <button type="button" onClick={() => setOpen(true)} className="w-full flex items-center justify-between min-h-8 mb-2 text-left">
         <span className="flex items-center gap-2">
           <BagIcon width={21} height={21} className="text-accent" />
-          <h2 className="text-[17px] font-bold">봉사</h2>
+          <h2 className="text-[17px] font-bold">{t('봉사', 'Ministry')}</h2>
         </span>
         {/* 이번 달 합계 — 누르면 결산 */}
         <span className="flex items-center gap-1 text-[16px] font-semibold text-ink-2 tabular-nums">
-          이번 달 {formatMinutes(month?.total ?? 0)}
+          {t('이번 달', 'This month')} {formatMinutes(month?.total ?? 0)}
           <ChevronRight width={18} height={18} className="text-ink-3" />
         </span>
       </button>
-      <p className="text-[15px] font-semibold text-ink-3">오늘</p>
+      <p className="text-[15px] font-semibold text-ink-3">{t('오늘', 'Today')}</p>
       <p className={`text-[30px] font-bold tabular-nums leading-tight mb-3 ${popped ? 'animate-pop' : ''} ${todayMin ? '' : 'text-ink-3'}`}>{formatMinutes(todayMin ?? 0)}</p>
       <Steps date={date} withMinus={!!todayMin} />
       {open && <ServiceSheet today={date} onClose={() => setOpen(false)} />}
@@ -96,26 +97,26 @@ function ServiceSheet({ today, onClose }: { today: string; onClose: () => void }
   const move = (n: number) => setMonthStart(toKey(addMonths(fromKey(monthStart), n)))
 
   return (
-    <Sheet open title="봉사 기록" onClose={onClose}>
+    <Sheet open title={t('봉사 기록', 'Ministry log')} onClose={onClose}>
       {/* 달 결산 */}
       <div className="bg-card-2 rounded-2xl p-3">
         <div className="flex items-center justify-between">
-          <IconButton label="이전 달" onClick={() => move(-1)}>
+          <IconButton label={t('이전 달', 'Previous month')} onClick={() => move(-1)}>
             <ChevronLeft />
           </IconButton>
           <span className="text-[17px] font-bold">{fmt(monthStart, 'yyyy년 M월')}</span>
-          <IconButton label="다음 달" onClick={() => move(1)}>
+          <IconButton label={t('다음 달', 'Next month')} onClick={() => move(1)}>
             <ChevronRight />
           </IconButton>
         </div>
         <p className="text-center text-[34px] font-bold tabular-nums leading-tight mt-1">{formatMinutes(month?.total ?? 0)}</p>
-        <p className="text-center text-[16px] text-ink-2 mt-1 mb-1">봉사한 날 {month?.days.length ?? 0}일</p>
+        <p className="text-center text-[16px] text-ink-2 mt-1 mb-1">{t(`봉사한 날 ${month?.days.length ?? 0}일`, `${month?.days.length ?? 0} days of ministry`)}</p>
       </div>
 
       {/* 날짜를 골라 시간 고치기 (깜빡한 날 채우기) */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <TextInput type="date" aria-label="고칠 날짜" value={editDate} onChange={(e) => e.target.value && setEditDate(e.target.value)} />
+          <TextInput type="date" aria-label={t('고칠 날짜', 'Date to edit')} value={editDate} onChange={(e) => e.target.value && setEditDate(e.target.value)} />
           <span className="shrink-0 w-[112px] text-right text-[20px] font-bold tabular-nums">{formatMinutes(editMin ?? 0)}</span>
         </div>
         <Steps date={editDate} />

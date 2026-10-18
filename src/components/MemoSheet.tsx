@@ -5,6 +5,7 @@ import { dailyTextUrl, fmt } from '../lib/date'
 import { Sheet, TextArea, TextInput } from './ui'
 import { ExternalIcon } from './icons'
 import { AnimatedList } from './Animated'
+import { t } from '../lib/i18n'
 
 /** 묵상 메모 한 개 — 누르면 그 자리에서 고친다 (칸에서 나가면 저장) */
 function MemoItem({ day }: { day: DailyText }) {
@@ -14,7 +15,7 @@ function MemoItem({ day }: { day: DailyText }) {
       <div className="flex items-center justify-between gap-2 mb-1.5">
         <span className="text-[17px] font-bold">{fmt(day.date, 'yyyy년 M월 d일 (E)')}</span>
         <a href={dailyTextUrl(day.date)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[15px] font-semibold text-gold shrink-0">
-          그날 성구 <ExternalIcon width={16} height={16} />
+          {t('그날 성구', 'Daily text')} <ExternalIcon width={16} height={16} />
         </a>
       </div>
       {editing ? (
@@ -51,9 +52,9 @@ export function MemoSheet({ onClose }: { onClose: () => void }) {
   const shown = (memos ?? []).filter((d) => !q || d.memo.includes(q))
 
   return (
-    <Sheet open title="묵상 메모" onClose={onClose}>
-      {!!memos?.length && <TextInput type="search" placeholder="검색" value={query} onChange={(e) => setQuery(e.target.value)} />}
-      {memos && !memos.length && <p className="text-[16px] text-ink-2 py-2">아직 적은 메모가 없어요.</p>}
+    <Sheet open title={t('묵상 메모', 'Meditation notes')} onClose={onClose}>
+      {!!memos?.length && <TextInput type="search" placeholder={t('검색', 'Search')} value={query} onChange={(e) => setQuery(e.target.value)} />}
+      {memos && !memos.length && <p className="text-[16px] text-ink-2 py-2">{t('아직 적은 메모가 없어요.', 'No notes yet.')}</p>}
       <AnimatedList className="divide-y divide-line">
         {shown.map((d) => (
           <MemoItem key={d.id} day={d} />

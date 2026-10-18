@@ -1,15 +1,21 @@
 import { useEffect } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { COLORS, DEFAULT_CATEGORY_NAMES, categoryId, categorySlotId, db, type Category } from '../db'
+import { DEFAULT_CATEGORY_NAMES_EN, t } from '../lib/i18n'
 
-export type CategoryInfo = { slot: number; color: string; name: string }
+/** name = 화면에 보일 이름, custom = 직접 바꾼 이름 (없으면 기본 이름을 지금 언어로) */
+export type CategoryInfo = { slot: number; color: string; name: string; custom?: string }
+
+/** 기본 이름(한국어·영어)과 같으면 직접 바꾼 이름이 아니다 */
+const customName = (slot: number, name?: string) => (name && name !== DEFAULT_CATEGORY_NAMES[slot] && name !== DEFAULT_CATEGORY_NAMES_EN[slot] ? name : undefined)
 
 /** 저장된 기록으로 8칸의 지금 색·이름을 계산한다 (바꾸지 않은 칸은 기본값) */
 function resolve(saved: Category[] | undefined): CategoryInfo[] {
   return COLORS.map((def, slot) => {
     const rec = saved?.find((c) => c.slot === slot)
     const legacy = saved?.find((c) => c.slot == null && c.color === def)
-    return { slot, color: rec?.color ?? def, name: rec?.name || legacy?.name || DEFAULT_CATEGORY_NAMES[slot] }
+    const custom = customName(slot, rec?.name || legacy?.name)
+    return { slot, color: rec?.color ?? def, name: custom ?? t(DEFAULT_CATEGORY_NAMES[slot], DEFAULT_CATEGORY_NAMES_EN[slot]), custom }
   })
 }
 
@@ -21,16 +27,16 @@ export function useCategoryList() {
 
 export const useCategories = () => useCategoryList().list
 
-async function writeSlot(slot: number, color: string, name: string) {
+async function writeSlot(slot: number, color: string, name?: string) {
   await db.categories.delete(categoryId(COLORS[slot])) // 예전 방식 기록은 정리
-  if (color === COLORS[slot] && name === DEFAULT_CATEGORY_NAMES[slot]) await db.categories.delete(categorySlotId(slot))
+  if (color === COLORS[slot] && !name) await db.categories.delete(categorySlotId(slot))
   else await db.categories.put({ id: categorySlotId(slot), slot, color, name })
 }
 
 /** 이름 바꾸기 — 비우면 기본 이름으로 */
 export async function renameCategory(slot: number, name: string) {
   const cur = resolve(await db.categories.toArray())[slot]
-  await writeSlot(slot, cur.color, name.trim() || DEFAULT_CATEGORY_NAMES[slot])
+  await writeSlot(slot, cur.color, customName(slot, name.trim()))
 }
 
 /** 색 바꾸기 — 이 카테고리였던 일정·반복 일정·묶음도 함께 새 색으로 */
@@ -42,7 +48,7 @@ export async function recolorCategory(slot: number, color: string) {
     await db.events.filter((x) => x.color === cur.color).modify({ color })
     await db.timetable.filter((x) => x.color === cur.color).modify({ color })
     await db.goals.filter((x) => x.color === cur.color).modify({ color })
-    await writeSlot(slot, color, cur.name)
+    await writeSlot(slot, color, cur.custom)
   })
 }
 
@@ -57,7 +63,7 @@ export function CategoryPicker({ value, onChange }: { value: string; onChange: (
     onChange(list[i >= 0 ? i : 0].color)
   }, [loaded, colors, value]) // eslint-disable-line react-hooks/exhaustive-deps
   return (
-    <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="카테고리">
+    <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={t('카테고리', 'Category')}>
       {list.map((c) => {
         const on = value === c.color
         return (

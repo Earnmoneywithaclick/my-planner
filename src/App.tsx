@@ -7,10 +7,13 @@ import Tasks from './pages/Tasks'
 import Questions from './pages/Questions'
 import Settings from './pages/Settings'
 import Guide from './pages/Guide'
+import { useLang } from './lib/i18n'
 
 export default function App() {
+  // 언어를 바꾸면 화면 전체를 새로 그린다
+  const lang = useLang()
   return (
-    <HashRouter>
+    <HashRouter key={lang}>
       <main className="max-w-xl md:max-w-none mx-auto min-h-dvh pb-[calc(env(safe-area-inset-bottom)+84px)]">
         <Routes>
           <Route path="/" element={<Today />} />

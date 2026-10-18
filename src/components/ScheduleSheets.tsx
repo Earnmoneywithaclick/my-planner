@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { COLORS, db, newId, type PlanEvent, type TimetableBlock } from '../db'
-import { TIME_SLOTS, WEEKDAYS, WEEK_ORDER, timeLabel, shiftKey, todayKey } from '../lib/date'
+import { TIME_SLOTS, weekdayShort, WEEK_ORDER, timeLabel, shiftKey, todayKey } from '../lib/date'
 import { Button, Select, Sheet, TextArea, TextInput } from './ui'
 import { CategoryPicker } from './Categories'
 import { DateRangePicker } from './DateRangePicker'
+import { t } from '../lib/i18n'
 
 /** 30분 단위 시간 고르기. 예전에 저장한 다른 값이 있으면 그 값도 목록에 넣는다. */
 function TimeSelect({ value, onChange, emptyLabel, after, label }: { value?: string; onChange: (v?: string) => void; emptyLabel?: string; after?: string; label: string }) {
@@ -27,13 +28,13 @@ function TimeRange({ start, end, onChange, startEmptyLabel }: { start?: string; 
   return (
     <div className="flex items-center gap-2">
       <TimeSelect
-        label="시작 시간"
+        label={t('시작 시간', 'Start time')}
         value={start}
         emptyLabel={startEmptyLabel}
         onChange={(s) => onChange({ start: s, end: !s || (end && end <= s) ? undefined : end })}
       />
       <span className="text-ink-3 text-[17px]">~</span>
-      <TimeSelect label="끝 시간" value={end} emptyLabel="끝 없음" after={start} onChange={(e) => onChange({ end: e })} />
+      <TimeSelect label={t('끝 시간', 'End time')} value={end} emptyLabel={t('끝 없음', 'No end')} after={start} onChange={(e) => onChange({ end: e })} />
     </div>
   )
 }
@@ -49,7 +50,7 @@ function WeekdayPicker({ days, onToggle }: { days: number[]; onToggle: (d: numbe
           aria-pressed={days.includes(d)}
           className={`flex-1 h-11 rounded-xl text-[16px] font-semibold ${days.includes(d) ? 'bg-accent text-bg' : `bg-card-2 ${d === 0 ? 'text-danger' : 'text-ink-2'}`}`}
         >
-          {WEEKDAYS[d]}
+          {weekdayShort(d)}
         </button>
       ))}
     </div>
@@ -66,7 +67,7 @@ function CheckToggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => 
       onClick={() => onChange(!on)}
       className="w-full h-12 rounded-xl bg-card-2 px-3.5 flex items-center justify-between text-[16px] font-medium text-ink"
     >
-      했는지 체크
+      {t('했는지 체크', 'Check when done')}
       <span className={`w-12 h-7 rounded-full p-0.5 transition-colors ${on ? 'bg-accent' : 'bg-ink-3/35'}`}>
         <span className={`block size-6 rounded-full bg-white shadow transition-transform ${on ? 'translate-x-5' : ''}`} />
       </span>
@@ -79,11 +80,11 @@ function Footer({ isNew, valid, onSave, onRemove }: { isNew: boolean; valid: boo
     <>
       {!isNew && (
         <Button variant="danger" onClick={onRemove}>
-          삭제
+          {t('삭제', 'Delete')}
         </Button>
       )}
       <Button className="flex-1" onClick={onSave} disabled={!valid}>
-        저장
+        {t('저장', 'Save')}
       </Button>
     </>
   )
@@ -146,11 +147,11 @@ export function BlockSheet({ initial, onClose }: { initial: Partial<TimetableBlo
     })
 
   return (
-    <Sheet open title={isNew ? '반복 일정 추가' : '반복 일정 수정'} onClose={onClose} footer={<Footer isNew={isNew} valid={valid} onSave={save} onRemove={remove} />}>
-      <TextInput autoFocus={isNew} placeholder="무엇을 하나요?" value={b.title ?? ''} onChange={(e) => set({ title: e.target.value })} />
+    <Sheet open title={isNew ? t('반복 일정 추가', 'New weekly item') : t('반복 일정 수정', 'Edit weekly item')} onClose={onClose} footer={<Footer isNew={isNew} valid={valid} onSave={save} onRemove={remove} />}>
+      <TextInput autoFocus={isNew} placeholder={t('무엇을 하나요?', 'What is it?')} value={b.title ?? ''} onChange={(e) => set({ title: e.target.value })} />
       <WeekdayPicker days={days} onToggle={toggleDay} />
       <TimeRange start={b.start} end={b.end} onChange={set} />
-      <TextInput placeholder="장소" value={b.place ?? ''} onChange={(e) => set({ place: e.target.value })} />
+      <TextInput placeholder={t('장소', 'Place')} value={b.place ?? ''} onChange={(e) => set({ place: e.target.value })} />
       <CheckToggle on={!!b.check} onChange={(check) => set({ check })} />
       <CategoryPicker value={b.color!} onChange={(color) => set({ color })} />
     </Sheet>
@@ -188,13 +189,13 @@ export function EventSheet({ initial, onClose, quickDates = false }: { initial: 
   }
 
   return (
-    <Sheet open title={isNew ? '새 일정' : '일정 수정'} onClose={onClose} footer={<Footer isNew={isNew} valid={valid} onSave={save} onRemove={remove} />}>
-      <TextInput autoFocus={isNew} placeholder="일정 이름" value={ev.title ?? ''} onChange={(e) => set({ title: e.target.value })} />
+    <Sheet open title={isNew ? t('새 일정', 'New event') : t('일정 수정', 'Edit event')} onClose={onClose} footer={<Footer isNew={isNew} valid={valid} onSave={save} onRemove={remove} />}>
+      <TextInput autoFocus={isNew} placeholder={t('일정 이름', 'Event name')} value={ev.title ?? ''} onChange={(e) => set({ title: e.target.value })} />
       {/* 한 달력에서 시작 날 → 마지막 날 차례로 탭 */}
       {quickDates ? (
         // 오늘 화면에서 바로 추가할 때는 큰 달력 대신 오늘·내일·모레만
         <div className="flex gap-2">
-          {(['오늘', '내일', '모레'] as const).map((label, i) => {
+          {t(['오늘', '내일', '모레'], ['Today', 'Tomorrow', 'In 2 days']).map((label, i) => {
             const key = shiftKey(todayKey(), i)
             return (
               <button
@@ -211,9 +212,9 @@ export function EventSheet({ initial, onClose, quickDates = false }: { initial: 
       ) : (
         <DateRangePicker start={ev.date} end={ev.endDate} awaitEnd={isNew} onChange={({ date, endDate }) => set({ date, endDate })} />
       )}
-      <TimeRange start={ev.start} end={ev.end} onChange={set} startEmptyLabel="하루 종일" />
+      <TimeRange start={ev.start} end={ev.end} onChange={set} startEmptyLabel={t('하루 종일', 'All day')} />
       <CheckToggle on={!!ev.check} onChange={(check) => set({ check })} />
-      <TextArea placeholder="메모" value={ev.note ?? ''} onChange={(e) => set({ note: e.target.value })} />
+      <TextArea placeholder={t('메모', 'Note')} value={ev.note ?? ''} onChange={(e) => set({ note: e.target.value })} />
       <CategoryPicker value={ev.color!} onChange={(color) => set({ color })} />
     </Sheet>
   )

@@ -2,17 +2,18 @@ import { useState } from 'react'
 import { useLiveQuery, useObservable } from 'dexie-react-hooks'
 import { addDays, differenceInCalendarDays } from 'date-fns'
 import { biblePlanId, db, dayId, patchDay, type BiblePlan } from '../db'
-import { BOOKS, SCOPES, chaptersOf, rangeLabel, readingUrl } from '../lib/bible'
+import { BOOKS, bookName, scopes, chaptersOf, rangeLabel, readingUrl } from '../lib/bible'
 import { fmt, fromKey, toKey } from '../lib/date'
 import { useChanged } from '../lib/motion'
 import { Button, Card, Chip, Segmented, Select, Sheet, TextInput } from './ui'
 import { CheckIcon, ChevronRight, ExternalIcon } from './icons'
+import { t } from '../lib/i18n'
 
-const PERIODS: [string, number][] = [
-  ['90일', 90],
-  ['180일', 180],
-  ['1년', 365],
-  ['2년', 730],
+const periods = (): [string, number][] => [
+  [t('90일', '90 days'), 90],
+  [t('180일', '180 days'), 180],
+  [t('1년', '1 year'), 365],
+  [t('2년', '2 years'), 730],
 ]
 
 /** 계획 + 오늘 기록 */
@@ -35,9 +36,9 @@ export function BibleCard({ today }: { today: string }) {
   if (!plan) {
     return (
       <Card>
-        <h2 className="text-[17px] font-bold mb-3">성경 읽기</h2>
+        <h2 className="text-[17px] font-bold mb-3">{t('성경 읽기', 'Bible Reading')}</h2>
         <Button variant="soft" className="w-full" onClick={() => setSheet('plan')}>
-          읽기 계획 세우기
+          {t('읽기 계획 세우기', 'Make a reading plan')}
         </Button>
         {sheet === 'plan' && <PlanSheet today={today} onClose={() => setSheet(null)} />}
       </Card>
@@ -56,7 +57,13 @@ export function BibleCard({ today }: { today: string }) {
   const elapsed = differenceInCalendarDays(fromKey(today), fromKey(plan.startDate)) + (doneToday ? 1 : 0)
   const expected = elapsed <= 0 ? 0 : Math.min(total, elapsed * plan.perDay)
   const diff = plan.readUpTo - expected
-  const status = finished ? '다 읽었어요' : diff === 0 ? '계획대로 가고 있어요' : diff > 0 ? `계획보다 ${diff}장 앞서요` : `계획보다 ${-diff}장 밀렸어요`
+  const status = finished
+    ? t('다 읽었어요', 'Finished')
+    : diff === 0
+      ? t('계획대로 가고 있어요', 'On track')
+      : diff > 0
+        ? t(`계획보다 ${diff}장 앞서요`, `${diff} chapter${diff > 1 ? 's' : ''} ahead`)
+        : t(`계획보다 ${-diff}장 밀렸어요`, `${-diff} chapter${-diff > 1 ? 's' : ''} behind`)
 
   async function toggleDone() {
     if (!plan) return
@@ -73,7 +80,7 @@ export function BibleCard({ today }: { today: string }) {
   return (
     <Card>
       <button type="button" onClick={() => setSheet('detail')} className="w-full flex items-center justify-between min-h-8 mb-2 text-left">
-        <h2 className="text-[17px] font-bold">성경 읽기</h2>
+        <h2 className="text-[17px] font-bold">{t('성경 읽기', 'Bible Reading')}</h2>
         <span className="flex items-center gap-1 text-[16px] font-semibold text-ink-2 tabular-nums">
           {pct}%
           <ChevronRight width={18} height={18} className="text-ink-3" />
@@ -81,10 +88,10 @@ export function BibleCard({ today }: { today: string }) {
       </button>
 
       {finished ? (
-        <p className="text-[19px] font-bold leading-snug mb-3">계획한 범위를 모두 읽었어요</p>
+        <p className="text-[19px] font-bold leading-snug mb-3">{t('계획한 범위를 모두 읽었어요', 'You’ve read the whole plan')}</p>
       ) : (
         <>
-          <p className="text-[15px] font-semibold text-ink-3">{doneToday ? '오늘 읽은 곳' : '오늘 읽을 곳'}</p>
+          <p className="text-[15px] font-semibold text-ink-3">{doneToday ? t('오늘 읽은 곳', 'Read today') : t('오늘 읽을 곳', 'Today’s reading')}</p>
           <p className={`text-[20px] font-bold leading-snug mb-3 ${popped ? 'animate-pop' : ''}`}>{rangeLabel(chapters[from - 1], chapters[to - 1])}</p>
           <div className="flex gap-2">
             <a
@@ -93,7 +100,7 @@ export function BibleCard({ today }: { today: string }) {
               rel="noopener noreferrer"
               className="flex-1 h-12 rounded-xl bg-card-2 text-ink font-semibold text-[16px] flex items-center justify-center gap-1.5 active:opacity-70"
             >
-              읽기 <ExternalIcon width={18} height={18} />
+              {t('읽기', 'Read')} <ExternalIcon width={18} height={18} />
             </a>
             <button
               type="button"
@@ -102,7 +109,7 @@ export function BibleCard({ today }: { today: string }) {
               className={`flex-1 h-12 rounded-xl font-semibold text-[16px] flex items-center justify-center gap-1.5 active:opacity-70 ${doneToday ? 'bg-accent text-bg' : 'bg-accent-soft text-accent'}`}
             >
               {doneToday && <CheckIcon width={18} height={18} strokeWidth={2.6} className={popped ? 'animate-pop' : ''} />}
-              {doneToday ? '다 읽었어요' : '다 읽음'}
+              {doneToday ? t('다 읽었어요', 'Done') : t('다 읽음', 'Mark done')}
             </button>
           </div>
         </>
@@ -134,7 +141,7 @@ function PlanSheet({ today, plan, onClose }: { today: string; plan?: BiblePlan; 
   const daily = mode === 'days' ? Math.max(1, Math.ceil(total / Math.max(1, days))) : perDay
   const length = Math.ceil(total / daily)
   const endDate = toKey(addDays(fromKey(startDate), length - 1))
-  const scope = SCOPES.find((s) => s.from === fromBook && s.to === toBook)
+  const scope = scopes().find((s) => s.from === fromBook && s.to === toBook)
   const [custom, setCustom] = useState(!scope)
 
   async function save() {
@@ -156,17 +163,17 @@ function PlanSheet({ today, plan, onClose }: { today: string; plan?: BiblePlan; 
   return (
     <Sheet
       open
-      title={plan ? '읽기 계획 수정' : '성경 읽기 계획'}
+      title={plan ? t('읽기 계획 수정', 'Edit reading plan') : t('성경 읽기 계획', 'Bible reading plan')}
       onClose={onClose}
       footer={
         <Button className="flex-1" onClick={save}>
-          저장
+          {t('저장', 'Save')}
         </Button>
       }
     >
       {/* 범위 */}
       <div className="flex flex-wrap gap-2">
-        {SCOPES.map((s) => (
+        {scopes().map((s) => (
           <Chip
             key={s.label}
             active={!custom && s.from === fromBook && s.to === toBook}
@@ -180,61 +187,61 @@ function PlanSheet({ today, plan, onClose }: { today: string; plan?: BiblePlan; 
           </Chip>
         ))}
         <Chip active={custom} onClick={() => setCustom(true)}>
-          직접 고르기
+          {t('직접 고르기', 'Custom')}
         </Chip>
       </div>
       {custom && (
         <div className="flex items-center gap-2">
-          <Select aria-label="시작 책" value={fromBook} onChange={(e) => setFromBook(Number(e.target.value))}>
+          <Select aria-label={t('시작 책', 'First book')} value={fromBook} onChange={(e) => setFromBook(Number(e.target.value))}>
             {BOOKS.map((b, i) => (
               <option key={b.name} value={i + 1}>
-                {b.name}
+                {t(b.name, b.nameEn)}
               </option>
             ))}
           </Select>
           <span className="text-ink-3 text-[17px]">~</span>
-          <Select aria-label="마지막 책" value={toBook} onChange={(e) => setToBook(Number(e.target.value))}>
+          <Select aria-label={t('마지막 책', 'Last book')} value={toBook} onChange={(e) => setToBook(Number(e.target.value))}>
             {BOOKS.map((b, i) => (
               <option key={b.name} value={i + 1} disabled={i + 1 < fromBook}>
-                {b.name}
+                {t(b.name, b.nameEn)}
               </option>
             ))}
           </Select>
         </div>
       )}
 
-      <TextInput type="date" aria-label="시작일" value={startDate} onChange={(e) => e.target.value && setStartDate(e.target.value)} />
+      <TextInput type="date" aria-label={t('시작일', 'Start date')} value={startDate} onChange={(e) => e.target.value && setStartDate(e.target.value)} />
 
       {/* 기간으로 정할지, 하루 분량으로 정할지 */}
       <Segmented
         value={mode}
         onChange={setMode}
         options={[
-          { value: 'days', label: '기간으로' },
-          { value: 'perDay', label: '하루 분량으로' },
+          { value: 'days', label: t('기간으로', 'By length') },
+          { value: 'perDay', label: t('하루 분량으로', 'By daily amount') },
         ]}
       />
       {mode === 'days' ? (
         <div className="space-y-2">
           <div className="flex flex-wrap gap-2">
-            {PERIODS.map(([label, d]) => (
+            {periods().map(([label, d]) => (
               <Chip key={label} active={days === d} onClick={() => setDays(d)}>
                 {label}
               </Chip>
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <TextInput type="number" inputMode="numeric" min={1} aria-label="며칠 동안" value={days} onChange={(e) => setDays(Math.max(1, Number(e.target.value) || 1))} />
-            <span className="text-[17px] shrink-0">일 동안</span>
+            <TextInput type="number" inputMode="numeric" min={1} aria-label={t('며칠 동안', 'Number of days')} value={days} onChange={(e) => setDays(Math.max(1, Number(e.target.value) || 1))} />
+            <span className="text-[17px] shrink-0">{t('일 동안', 'days')}</span>
           </div>
         </div>
       ) : (
         <div className="flex items-center gap-2">
-          <Button variant="ghost" className="w-12 !px-0" aria-label="하루 분량 줄이기" onClick={() => setPerDay((n) => Math.max(1, n - 1))}>
+          <Button variant="ghost" className="w-12 !px-0" aria-label={t('하루 분량 줄이기', 'Fewer per day')} onClick={() => setPerDay((n) => Math.max(1, n - 1))}>
             −
           </Button>
-          <span className="flex-1 text-center text-[20px] font-bold tabular-nums">하루 {perDay}장</span>
-          <Button variant="ghost" className="w-12 !px-0" aria-label="하루 분량 늘리기" onClick={() => setPerDay((n) => n + 1)}>
+          <span className="flex-1 text-center text-[20px] font-bold tabular-nums">{t(`하루 ${perDay}장`, `${perDay} ch. a day`)}</span>
+          <Button variant="ghost" className="w-12 !px-0" aria-label={t('하루 분량 늘리기', 'More per day')} onClick={() => setPerDay((n) => n + 1)}>
             +
           </Button>
         </div>
@@ -242,9 +249,9 @@ function PlanSheet({ today, plan, onClose }: { today: string; plan?: BiblePlan; 
 
       {/* 계산 결과 */}
       <div className="bg-card-2 rounded-2xl p-4 text-center">
-        <p className="text-[20px] font-bold">하루 {daily}장</p>
+        <p className="text-[20px] font-bold">{t(`하루 ${daily}장`, `${daily} ch. a day`)}</p>
         <p className="text-[16px] text-ink-2 mt-1">
-          {total}장 · {fmt(endDate, 'yyyy년 M월 d일')}까지 {length}일
+          {t(`${total}장 · ${fmt(endDate, 'yyyy년 M월 d일')}까지 ${length}일`, `${total} chapters · ${length} days, until ${fmt(endDate, 'yyyy년 M월 d일')}`)}
         </p>
       </div>
     </Sheet>
@@ -268,7 +275,7 @@ function DetailSheet({ plan, onEdit, onClose }: { plan: BiblePlan; onEdit: () =>
   return (
     <Sheet
       open
-      title="성경 읽기"
+      title={t('성경 읽기', 'Bible Reading')}
       onClose={onClose}
       footer={
         <>
@@ -279,42 +286,42 @@ function DetailSheet({ plan, onEdit, onClose }: { plan: BiblePlan; onEdit: () =>
               onClose()
             }}
           >
-            계획 삭제
+            {t('계획 삭제', 'Delete plan')}
           </Button>
           <Button variant="ghost" className="flex-1" onClick={onEdit}>
-            계획 수정
+            {t('계획 수정', 'Edit plan')}
           </Button>
         </>
       }
     >
       <div className="bg-card-2 rounded-2xl p-4">
         <p className="text-[18px] font-bold">
-          {BOOKS[plan.fromBook - 1].name} ~ {BOOKS[plan.toBook - 1].name}
+          {bookName(plan.fromBook)} ~ {bookName(plan.toBook)}
         </p>
         <p className="text-[16px] text-ink-2 mt-1">
-          하루 {plan.perDay}장 · {fmt(plan.startDate, 'M월 d일')} ~ {fmt(plan.endDate, 'yyyy년 M월 d일')}
+          {t(`하루 ${plan.perDay}장`, `${plan.perDay} ch. a day`)} · {fmt(plan.startDate, 'M월 d일')} ~ {fmt(plan.endDate, 'yyyy년 M월 d일')}
         </p>
         <p className="text-[16px] text-ink-2">
-          {chapters.length}장 중 {plan.readUpTo}장 읽음
+          {t(`${chapters.length}장 중 ${plan.readUpTo}장 읽음`, `${plan.readUpTo} of ${chapters.length} chapters read`)}
         </p>
       </div>
 
       {/* 어디까지 읽었는지 */}
       <div className="space-y-2">
-        <p className="text-[17px] font-bold">어디까지 읽었나요?</p>
+        <p className="text-[17px] font-bold">{t('어디까지 읽었나요?', 'How far have you read?')}</p>
         <div className="flex gap-2">
-          <Select aria-label="책" value={book} onChange={(e) => savePosition(Number(e.target.value), 0)}>
+          <Select aria-label={t('책', 'Book')} value={book} onChange={(e) => savePosition(Number(e.target.value), 0)}>
             {BOOKS.slice(plan.fromBook - 1, plan.toBook).map((b, i) => (
               <option key={b.name} value={plan.fromBook + i}>
-                {b.name}
+                {t(b.name, b.nameEn)}
               </option>
             ))}
           </Select>
-          <Select aria-label="장" value={chapter} onChange={(e) => savePosition(book, Number(e.target.value))} className="!w-32 shrink-0">
-            <option value={0}>읽기 전</option>
+          <Select aria-label={t('장', 'Chapter')} value={chapter} onChange={(e) => savePosition(book, Number(e.target.value))} className="!w-32 shrink-0">
+            <option value={0}>{t('읽기 전', 'Not started')}</option>
             {Array.from({ length: BOOKS[book - 1].chapters }, (_, i) => (
               <option key={i} value={i + 1}>
-                {i + 1}장까지
+                {t(`${i + 1}장까지`, `Through ch. ${i + 1}`)}
               </option>
             ))}
           </Select>

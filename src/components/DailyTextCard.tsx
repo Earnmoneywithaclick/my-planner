@@ -7,6 +7,7 @@ import { Card, TextArea } from './ui'
 import { BookIcon, CheckIcon, ExternalIcon, FlameIcon, NotesIcon } from './icons'
 import { MemoSheet } from './MemoSheet'
 import { useChanged } from '../lib/motion'
+import { t } from '../lib/i18n'
 
 /** 오늘부터(오늘 아직 안 읽었으면 어제부터) 거꾸로 연속해서 읽은 날 수 */
 function streakOf(readDays: Set<string>, today: string) {
@@ -70,17 +71,17 @@ export function DailyTextCard({ date }: { date: string }) {
         <div className="flex items-center justify-between text-gold">
           <div className="flex items-center gap-2">
             <BookIcon width={22} height={22} />
-            <h2 className="text-[17px] font-bold">일용할 성구</h2>
+            <h2 className="text-[17px] font-bold">{t('일용할 성구', 'Daily Text')}</h2>
           </div>
           <div className="flex items-center gap-1">
             {streak > 0 && (
-              <span className="flex items-center gap-1 text-[17px] font-bold tabular-nums" aria-label={`${streak}일 연속`}>
+              <span className="flex items-center gap-1 text-[17px] font-bold tabular-nums" aria-label={t(`${streak}일 연속`, `${streak}-day streak`)}>
                 <FlameIcon width={20} height={20} strokeWidth={2.1} />
                 {streak}
               </span>
             )}
             {/* 지금까지 적은 묵상 메모 모아 보기 */}
-            <button type="button" aria-label="묵상 메모 모아 보기" onClick={() => setMemosOpen(true)} className="size-11 -my-3 -mr-2 grid place-items-center rounded-full active:bg-gold-soft">
+            <button type="button" aria-label={t('묵상 메모 모아 보기', 'All meditation notes')} onClick={() => setMemosOpen(true)} className="size-11 -my-3 -mr-2 grid place-items-center rounded-full active:bg-gold-soft">
               <NotesIcon width={21} height={21} />
             </button>
           </div>
@@ -92,20 +93,20 @@ export function DailyTextCard({ date }: { date: string }) {
             rel="noopener noreferrer"
             className="flex-1 h-12 rounded-xl bg-gold text-bg font-semibold text-[16px] flex items-center justify-center gap-1.5 active:opacity-70"
           >
-            성구 열기 <ExternalIcon width={18} height={18} />
+            {t('성구 열기', 'Open text')} <ExternalIcon width={18} height={18} />
           </a>
           <button
             type="button"
             onClick={() => patchDaily(date, { read: isRead ? 0 : 1 })}
             aria-pressed={isRead}
-            aria-label={isRead ? '읽음 취소' : '읽음'}
+            aria-label={isRead ? t('읽음 취소', 'Undo read') : t('읽음', 'Read')}
             className={`h-12 rounded-xl font-semibold text-[16px] flex items-center justify-center active:opacity-70 ${isRead ? 'w-12 bg-accent text-bg' : 'px-4 bg-card text-ink-2'}`}
           >
-            {isRead ? <CheckIcon width={22} height={22} strokeWidth={2.6} className={readPopped ? 'animate-pop' : ''} /> : '읽음'}
+            {isRead ? <CheckIcon width={22} height={22} strokeWidth={2.6} className={readPopped ? 'animate-pop' : ''} /> : t('읽음', 'Read')}
           </button>
         </div>
         {/* 이번 달 읽은 날 */}
-        <div className="flex flex-wrap gap-[6px] mt-3.5" aria-label="이번 달 읽은 날">
+        <div className="flex flex-wrap gap-[6px] mt-3.5" aria-label={t('이번 달 읽은 날', 'Days read this month')}>
           {monthDays.map((d) => (
             <span
               key={d}
@@ -115,16 +116,16 @@ export function DailyTextCard({ date }: { date: string }) {
         </div>
       </div>
       <div className="flex gap-2 p-3 border-b border-line">
-        <DailyCheck label="기도" checked={rec?.prayed === 1} onToggle={() => patchDaily(date, { prayed: rec?.prayed === 1 ? 0 : 1 })} />
-        <DailyCheck label="개인 연구" checked={rec?.study === 1} onToggle={() => patchDaily(date, { study: rec?.study === 1 ? 0 : 1 })} />
+        <DailyCheck label={t('기도', 'Prayer')} checked={rec?.prayed === 1} onToggle={() => patchDaily(date, { prayed: rec?.prayed === 1 ? 0 : 1 })} />
+        <DailyCheck label={t('개인 연구', 'Personal Study')} checked={rec?.study === 1} onToggle={() => patchDaily(date, { study: rec?.study === 1 ? 0 : 1 })} />
       </div>
       {memoOpen || memoValue ? (
         <div className="p-3">
-          <TextArea value={memoValue} onChange={(e) => onMemo(e.target.value)} onBlur={() => memo != null && patchDaily(date, { memo })} placeholder="묵상 메모" rows={3} autoFocus={memoOpen && !memoValue} />
+          <TextArea value={memoValue} onChange={(e) => onMemo(e.target.value)} onBlur={() => memo != null && patchDaily(date, { memo })} placeholder={t('묵상 메모', 'Meditation note')} rows={3} autoFocus={memoOpen && !memoValue} />
         </div>
       ) : (
         <button type="button" onClick={() => setMemoOpen(true)} className="w-full h-12 text-[16px] font-semibold text-ink-3 active:bg-card-2">
-          + 묵상 메모
+          {t('+ 묵상 메모', '+ Meditation note')}
         </button>
       )}
       {memosOpen && <MemoSheet onClose={() => setMemosOpen(false)} />}

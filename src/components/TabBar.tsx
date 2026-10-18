@@ -1,14 +1,14 @@
 import { NavLink } from 'react-router-dom'
 import { SunIcon, CalendarIcon, CheckSquareIcon, QuestionIcon } from './icons'
-
-const TABS = [
-  { to: '/', label: '오늘', Icon: SunIcon },
-  { to: '/timetable', label: '시간표', Icon: CalendarIcon },
-  { to: '/tasks', label: '할 일', Icon: CheckSquareIcon },
-  { to: '/questions', label: '질문', Icon: QuestionIcon },
-]
+import { t } from '../lib/i18n'
 
 export function TabBar() {
+  const TABS = [
+    { to: '/', label: t('오늘', 'Today'), Icon: SunIcon },
+    { to: '/timetable', label: t('시간표', 'Schedule'), Icon: CalendarIcon },
+    { to: '/tasks', label: t('할 일', 'To-do'), Icon: CheckSquareIcon },
+    { to: '/questions', label: t('질문', 'Questions'), Icon: QuestionIcon },
+  ]
   return (
     <nav className="fixed bottom-0 inset-x-0 z-40 bg-bg/90 backdrop-blur-xl border-t border-line pb-safe">
       <ul className="flex max-w-xl md:max-w-2xl mx-auto">

@@ -4,6 +4,7 @@ import { db, newId, type Question } from '../db'
 import { shiftKey, todayKey } from '../lib/date'
 import { Button, Chip, Sheet, TextArea } from './ui'
 import { AnimatedDiv } from './Animated'
+import { questionCategory, questionText, t } from '../lib/i18n'
 
 export const CATEGORIES = ['하루 돌아보기', '우선순위', '목표', '나 자신', '관계', '영적인 것', '기타']
 
@@ -18,9 +19,9 @@ export async function saveAnswer(q: Question, text: string) {
 function ReviewButtons({ q }: { q: Question }) {
   const today = todayKey()
   const opts: [string, number][] = [
-    ['내일 다시', 1],
-    ['1주 뒤 다시', 7],
-    ['1달 뒤 다시', 30],
+    [t('내일 다시', 'Tomorrow'), 1],
+    [t('1주 뒤 다시', 'In a week'), 7],
+    [t('1달 뒤 다시', 'In a month'), 30],
   ]
   return (
     <div className="flex gap-2">
@@ -48,7 +49,7 @@ export function QuestionSheet({ initial, onClose }: { initial: Partial<Question>
   const isNew = initial.id == null
   const live = useLiveQuery(() => (initial.id != null ? db.questions.get(initial.id) : undefined), [initial.id])
   const answers = useLiveQuery(() => (initial.id != null ? db.answers.where('questionId').equals(initial.id).reverse().sortBy('createdAt') : []), [initial.id])
-  const [text, setText] = useState(initial.text ?? '')
+  const [text, setText] = useState(questionText(initial.text ?? ''))
   const [category, setCategory] = useState(initial.category ?? CATEGORIES[0])
   const [answer, setAnswer] = useState('')
   const [editing, setEditing] = useState(isNew)
@@ -60,7 +61,9 @@ export function QuestionSheet({ initial, onClose }: { initial: Partial<Question>
       await db.questions.add({ id: newId(), text: text.trim(), category, pinned: 0, createdAt: Date.now() })
       onClose()
     } else {
-      await db.questions.update(q.id!, { text: text.trim(), category })
+      // 기본 질문을 영어로 보고 그대로 저장하면 원래 글(한국어)을 그대로 둔다
+      const same = initial.text != null && text.trim() === questionText(initial.text)
+      await db.questions.update(q.id!, { text: same ? initial.text : text.trim(), category })
       setEditing(false)
     }
   }
@@ -82,19 +85,19 @@ export function QuestionSheet({ initial, onClose }: { initial: Partial<Question>
     return (
       <Sheet
         open
-        title={isNew ? '새 질문' : '질문 수정'}
+        title={isNew ? t('새 질문', 'New question') : t('질문 수정', 'Edit question')}
         onClose={isNew ? onClose : () => setEditing(false)}
         footer={
           <Button className="flex-1" onClick={saveQuestion} disabled={!text.trim()}>
-            저장
+            {t('저장', 'Save')}
           </Button>
         }
       >
-        <TextArea autoFocus placeholder="나에게 다시 묻고 싶은 질문" value={text} onChange={(e) => setText(e.target.value)} />
+        <TextArea autoFocus placeholder={t('나에게 다시 묻고 싶은 질문', 'A question to ask myself again')} value={text} onChange={(e) => setText(e.target.value)} />
         <div className="flex flex-wrap gap-2">
           {CATEGORIES.map((c) => (
             <Chip key={c} active={category === c} onClick={() => setCategory(c)}>
-              {c}
+              {questionCategory(c)}
             </Chip>
           ))}
         </div>
@@ -105,26 +108,26 @@ export function QuestionSheet({ initial, onClose }: { initial: Partial<Question>
   return (
     <Sheet
       open
-      title="질문"
+      title={t('질문', 'Question')}
       onClose={onClose}
       footer={
         <>
           <Button variant="danger" onClick={remove}>
-            삭제
+            {t('삭제', 'Delete')}
           </Button>
           <Button variant="ghost" onClick={() => db.questions.update(q.id!, { pinned: q.pinned ? 0 : 1 })}>
-            {q.pinned ? '고정 해제' : '고정'}
+            {q.pinned ? t('고정 해제', 'Unpin') : t('고정', 'Pin')}
           </Button>
           <Button variant="ghost" className="flex-1" onClick={() => setEditing(true)}>
-            수정
+            {t('수정', 'Edit')}
           </Button>
         </>
       }
     >
-      <p className="text-[21px] font-bold leading-snug">{q.text}</p>
-      <TextArea value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="떠오르는 대로 적어 보세요" rows={4} />
+      <p className="text-[21px] font-bold leading-snug">{questionText(q.text)}</p>
+      <TextArea value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder={t('떠오르는 대로 적어 보세요', 'Write whatever comes to mind')} rows={4} />
       <Button className="w-full" onClick={submitAnswer} disabled={!answer.trim()}>
-        답 저장
+        {t('답 저장', 'Save answer')}
       </Button>
       <ReviewButtons q={q} />
       <AnimatedDiv className="space-y-4">

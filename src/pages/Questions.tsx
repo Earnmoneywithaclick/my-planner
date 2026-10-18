@@ -7,6 +7,7 @@ import { Card, Chip, IconButton, PageHeader, Segmented } from '../components/ui'
 import { PinIcon, PlusIcon } from '../components/icons'
 import { CATEGORIES, QuestionSheet } from '../components/QuestionSheet'
 import { AnimatedDiv, AnimatedList, FlashLi } from '../components/Animated'
+import { questionCategory, questionText, t } from '../lib/i18n'
 
 export default function Questions() {
   const { today } = useNow()
@@ -30,9 +31,9 @@ export default function Questions() {
   return (
     <>
       <PageHeader
-        title="질문"
+        title={t('질문', 'Questions')}
         right={
-          <IconButton label="질문 추가" className="bg-accent text-bg" onClick={() => setOpen({ category: cat ?? undefined })}>
+          <IconButton label={t('질문 추가', 'Add question')} className="bg-accent text-bg" onClick={() => setOpen({ category: cat ?? undefined })}>
             <PlusIcon />
           </IconButton>
         }
@@ -42,8 +43,8 @@ export default function Questions() {
           value={mode}
           onChange={setMode}
           options={[
-            { value: 'list', label: '질문' },
-            { value: 'log', label: '나의 답' },
+            { value: 'list', label: t('질문', 'Questions') },
+            { value: 'log', label: t('나의 답', 'My answers') },
           ]}
         />
       </div>
@@ -52,11 +53,11 @@ export default function Questions() {
         <>
           <div className="flex gap-2 overflow-x-auto no-scrollbar gutter pb-3">
             <Chip active={!cat} onClick={() => setCat(null)}>
-              전체
+              {t('전체', 'All')}
             </Chip>
             {usedCats.map((c) => (
               <Chip key={c} active={cat === c} onClick={() => setCat(c)}>
-                {c}
+                {questionCategory(c)}
               </Chip>
             ))}
           </div>
@@ -67,8 +68,8 @@ export default function Questions() {
                   {list.map((q) => (
                     <FlashLi key={q.id} signal={`${q.text}|${q.pinned}|${q.nextReview}|${q.category}`}>
                       <button type="button" onClick={() => setOpen(q)} className="w-full text-left py-3.5 flex items-center gap-3">
-                        {isDue(q) && <span className="size-2.5 rounded-full bg-gold shrink-0" aria-label="다시 볼 때" />}
-                        <span className="flex-1 min-w-0 text-[17px] leading-snug">{q.text}</span>
+                        {isDue(q) && <span className="size-2.5 rounded-full bg-gold shrink-0" aria-label={t('다시 볼 때', 'Due for review')} />}
+                        <span className="flex-1 min-w-0 text-[17px] leading-snug">{questionText(q.text)}</span>
                         {q.pinned === 1 && <PinIcon width={18} height={18} className="text-accent shrink-0" />}
                       </button>
                     </FlashLi>
@@ -109,7 +110,7 @@ function AnswerLog({ data, onOpen }: { data: { answers: Answer[]; byId: Map<stri
               return (
                 <button key={a.id} type="button" onClick={() => q && onOpen(q)} className="block w-full text-left">
                   <Card>
-                    {q && <p className="text-[16px] font-semibold text-accent leading-snug">{q.text}</p>}
+                    {q && <p className="text-[16px] font-semibold text-accent leading-snug">{questionText(q.text)}</p>}
                     <p className="text-[16px] mt-1.5 whitespace-pre-wrap leading-relaxed">{a.text}</p>
                   </Card>
                 </button>

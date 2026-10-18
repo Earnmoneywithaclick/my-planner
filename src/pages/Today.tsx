@@ -14,6 +14,7 @@ import { TaskRow, TaskSheet } from '../components/TaskSheet'
 import { BlockSheet, EventSheet } from '../components/ScheduleSheets'
 import { QuestionSheet, saveAnswer } from '../components/QuestionSheet'
 import { AnimatedList } from '../components/Animated'
+import { questionText, t } from '../lib/i18n'
 
 export default function Today() {
   const { today } = useNow()
@@ -27,7 +28,7 @@ export default function Today() {
       <PageHeader
         title={fmt(today, 'M월 d일 EEEE')}
         right={
-          <Link to="/settings" aria-label="설정" className="size-11 grid place-items-center rounded-full text-ink-3 active:bg-card-2">
+          <Link to="/settings" aria-label={t('설정', 'Settings')} className="size-11 grid place-items-center rounded-full text-ink-3 active:bg-card-2">
             <GearIcon />
           </Link>
         }
@@ -42,12 +43,12 @@ export default function Today() {
         <Card>
           <SectionTitle
             right={
-              <IconButton label="오늘 일정 추가" className="-my-2 -mr-2 text-accent" onClick={() => setEventEdit({ date: today })}>
+              <IconButton label={t('오늘 일정 추가', 'Add event for today')} className="-my-2 -mr-2 text-accent" onClick={() => setEventEdit({ date: today })}>
                 <PlusIcon />
               </IconButton>
             }
           >
-            오늘 일정
+            {t('오늘 일정', 'Today’s schedule')}
           </SectionTitle>
           <AgendaList items={agenda} now={nowHHmm()} onOpen={(it) => (it.kind === 'block' ? setBlockEdit(it.block) : setEventEdit(it.event))} onToggle={(it) => toggleAgendaDone(it, today)} />
         </Card>
@@ -84,7 +85,7 @@ function TodayTasks({ today, onOpen }: { today: string; onOpen: (t: Partial<Task
 
   return (
     <Card>
-      <SectionTitle>오늘 할 일</SectionTitle>
+      <SectionTitle>{t('오늘 할 일', 'Today’s to-dos')}</SectionTitle>
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -92,8 +93,8 @@ function TodayTasks({ today, onOpen }: { today: string; onOpen: (t: Partial<Task
         }}
         className="flex gap-2"
       >
-        <TextInput value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="할 일 추가" enterKeyHint="done" />
-        <Button type="submit" variant="soft" className="shrink-0 !px-3.5" aria-label="할 일 추가" disabled={!draft.trim()}>
+        <TextInput value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={t('할 일 추가', 'Add a to-do')} enterKeyHint="done" />
+        <Button type="submit" variant="soft" className="shrink-0 !px-3.5" aria-label={t('할 일 추가', 'Add a to-do')} disabled={!draft.trim()}>
           <PlusIcon />
         </Button>
       </form>
@@ -133,14 +134,14 @@ function TodayQuestion({ today }: { today: string }) {
       <SectionTitle
         right={
           <button type="button" onClick={() => setOffset((o) => o + 1)} className="text-[15px] font-semibold text-accent h-11 -my-2">
-            다른 질문
+            {t('다른 질문', 'Another question')}
           </button>
         }
       >
-        {data.review ? '다시 생각해 볼 질문' : '오늘의 질문'}
+        {data.review ? t('다시 생각해 볼 질문', 'Question to revisit') : t('오늘의 질문', 'Today’s question')}
       </SectionTitle>
       <button type="button" onClick={() => setOpen(q)} className="text-left w-full text-[19px] font-bold leading-snug">
-        {q.text}
+        {questionText(q.text)}
       </button>
       {data.answered.length > 0 ? (
         <div className="mt-3 space-y-2">
@@ -152,7 +153,7 @@ function TodayQuestion({ today }: { today: string }) {
         </div>
       ) : (
         <div className="mt-3 space-y-2">
-          <TextArea value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="생각 적기" />
+          <TextArea value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder={t('생각 적기', 'Write your thoughts')} />
           <Button
             variant="soft"
             className="w-full"
@@ -162,7 +163,7 @@ function TodayQuestion({ today }: { today: string }) {
               setAnswer('')
             }}
           >
-            답 저장
+            {t('답 저장', 'Save answer')}
           </Button>
         </div>
       )}

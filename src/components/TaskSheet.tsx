@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { COLORS, db, newId, type Task } from '../db'
-import { Button, CheckCircle, PRIORITY_LABEL, Segmented, Select, Sheet, TextArea, TextInput } from './ui'
+import { Button, CheckCircle, priorityLabels, Segmented, Select, Sheet, TextArea, TextInput } from './ui'
 import { todayKey, shiftKey } from '../lib/date'
 import { FlashLi } from './Animated'
+import { t as tr } from '../lib/i18n'
 
 export function TaskSheet({ initial, onClose }: { initial: Partial<Task>; onClose: () => void }) {
   const [t, setT] = useState<Partial<Task>>({ priority: 1, ...initial })
@@ -29,30 +30,30 @@ export function TaskSheet({ initial, onClose }: { initial: Partial<Task>; onClos
 
   const today = todayKey()
   const quickDates: [string, string][] = [
-    ['오늘', today],
-    ['내일', shiftKey(today, 1)],
-    ['다음 주', shiftKey(today, 7)],
-    ['마감 없음', ''],
+    [tr('오늘', 'Today'), today],
+    [tr('내일', 'Tomorrow'), shiftKey(today, 1)],
+    [tr('다음 주', 'Next week'), shiftKey(today, 7)],
+    [tr('마감 없음', 'No due date'), ''],
   ]
   return (
     <Sheet
       open
-      title={isNew ? '새 할 일' : '할 일 수정'}
+      title={isNew ? tr('새 할 일', 'New to-do') : tr('할 일 수정', 'Edit to-do')}
       onClose={onClose}
       footer={
         <>
           {!isNew && (
             <Button variant="danger" onClick={remove}>
-              삭제
+              {tr('삭제', 'Delete')}
             </Button>
           )}
           <Button className="flex-1" onClick={save} disabled={!t.title?.trim()}>
-            저장
+            {tr('저장', 'Save')}
           </Button>
         </>
       }
     >
-      <TextInput autoFocus={isNew} placeholder="무엇을 해야 하나요?" value={t.title ?? ''} onChange={(e) => set({ title: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && save()} />
+      <TextInput autoFocus={isNew} placeholder={tr('무엇을 해야 하나요?', 'What needs doing?')} value={t.title ?? ''} onChange={(e) => set({ title: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && save()} />
       <div className="flex gap-2 flex-wrap">
         {quickDates.map(([label, key]) => (
           <button
@@ -65,11 +66,11 @@ export function TaskSheet({ initial, onClose }: { initial: Partial<Task>; onClos
           </button>
         ))}
       </div>
-      <TextInput type="date" aria-label="마감일" value={t.dueDate ?? ''} onChange={(e) => set({ dueDate: e.target.value })} />
-      <Segmented value={t.priority ?? 1} onChange={(v) => set({ priority: v as Task['priority'] })} options={PRIORITY_LABEL.map((label, i) => ({ value: i, label: `중요도 ${label}` }))} />
+      <TextInput type="date" aria-label={tr('마감일', 'Due date')} value={t.dueDate ?? ''} onChange={(e) => set({ dueDate: e.target.value })} />
+      <Segmented value={t.priority ?? 1} onChange={(v) => set({ priority: v as Task['priority'] })} options={priorityLabels().map((label, i) => ({ value: i, label: tr(`중요도 ${label}`, `${label} priority`) }))} />
       {!!goals?.length && (
-        <Select aria-label="연결된 계획" value={t.goalId ?? ''} onChange={(e) => set({ goalId: e.target.value || undefined })}>
-          <option value="">계획 연결 안 함</option>
+        <Select aria-label={tr('연결된 계획', 'Linked list')} value={t.goalId ?? ''} onChange={(e) => set({ goalId: e.target.value || undefined })}>
+          <option value="">{tr('묶음 없음', 'No list')}</option>
           {goals.map((g) => (
             <option key={g.id} value={g.id}>
               {g.title}
@@ -77,7 +78,7 @@ export function TaskSheet({ initial, onClose }: { initial: Partial<Task>; onClos
           ))}
         </Select>
       )}
-      <TextArea value={t.note ?? ''} onChange={(e) => set({ note: e.target.value })} placeholder="메모" />
+      <TextArea value={t.note ?? ''} onChange={(e) => set({ note: e.target.value })} placeholder={tr('메모', 'Note')} />
     </Sheet>
   )
 }
@@ -121,16 +122,16 @@ export function BulkTaskSheet({ onClose, existingGroup }: { onClose: () => void;
   return (
     <Sheet
       open
-      title={existingGroup ? `${existingGroup}에 추가` : '묶음으로 추가'}
+      title={existingGroup ? tr(`${existingGroup}에 추가`, `Add to ${existingGroup}`) : tr('묶음으로 추가', 'Add as a list')}
       onClose={onClose}
       footer={
         <Button className="flex-1" onClick={save} disabled={!titles.length && (!!existingGroup || !group.trim())}>
-          {titles.length ? `할 일 ${titles.length}개 추가` : existingGroup ? '추가' : '묶음 만들기'}
+          {titles.length ? tr(`할 일 ${titles.length}개 추가`, `Add ${titles.length} to-do${titles.length > 1 ? 's' : ''}`) : existingGroup ? tr('추가', 'Add') : tr('묶음 만들기', 'Create list')}
         </Button>
       }
     >
-      {!existingGroup && <TextInput autoFocus placeholder="묶음 이름" value={group} onChange={(e) => setGroup(e.target.value)} />}
-      <TextArea autoFocus={!!existingGroup} rows={10} placeholder="한 줄에 하나씩" value={text} onChange={(e) => setText(e.target.value)} />
+      {!existingGroup && <TextInput autoFocus placeholder={tr('묶음 이름', 'List name')} value={group} onChange={(e) => setGroup(e.target.value)} />}
+      <TextArea autoFocus={!!existingGroup} rows={10} placeholder={tr('한 줄에 하나씩', 'One per line')} value={text} onChange={(e) => setText(e.target.value)} />
     </Sheet>
   )
 }
@@ -141,7 +142,7 @@ export function TaskRow({ task, goalColor, onOpen }: { task: Task; goalColor?: s
   const toggle = () => db.tasks.update(task.id!, task.done ? { done: 0, doneAt: undefined } : { done: 1, doneAt: Date.now() })
   return (
     <FlashLi signal={`${task.title}|${task.priority}|${task.dueDate}|${goalColor}`} className="flex items-center gap-3 py-3">
-      <CheckCircle checked={!!task.done} onChange={toggle} color={goalColor} label={`${task.title} 완료`} />
+      <CheckCircle checked={!!task.done} onChange={toggle} color={goalColor} label={tr(`${task.title} 완료`, `${task.title} done`)} />
       <button type="button" onClick={onOpen} className="flex-1 min-w-0 text-left">
         <p className={`text-[17px] leading-snug ${task.done ? 'line-through text-ink-3' : overdue ? 'text-danger' : ''}`}>
           {task.priority === 2 && !task.done && <span className="text-danger font-bold mr-1">!</span>}

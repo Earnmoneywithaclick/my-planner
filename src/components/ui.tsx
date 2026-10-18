@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type InputHTMLAttributes, type TextareaHTMLAttributes, type ButtonHTMLAttributes, type SelectHTMLAttributes } from 'react'
 import { CheckIcon } from './icons'
 import { useChanged } from '../lib/motion'
+import { t } from '../lib/i18n'
 
 // 글자는 15px 미만으로 쓰지 않는다 — 보조 설명 글은 넣지 않고 꼭 필요한 정보만 보여준다.
 
@@ -174,7 +175,7 @@ export function Sheet({ open, title, onClose, children, footer }: { open: boolea
       <div className="relative w-full md:max-w-xl md:mx-auto bg-card rounded-t-3xl max-h-[92%] flex flex-col animate-sheet">
         <div className="flex items-center justify-between px-5 pt-3 pb-2">
           <button type="button" onClick={onClose} className="h-11 text-[16px] text-ink-3 font-medium">
-            닫기
+            {t('닫기', 'Close')}
           </button>
           <h2 className="text-[17px] font-bold">{title}</h2>
           <span className="w-8" />
@@ -188,4 +189,4 @@ export function Sheet({ open, title, onClose, children, footer }: { open: boolea
   )
 }
 
-export const PRIORITY_LABEL = ['낮음', '보통', '높음'] as const
+export const priorityLabels = () => t(['낮음', '보통', '높음'], ['Low', 'Medium', 'High'])

@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { db, type Goal } from '../db'
 import { Button, Sheet, TextArea, TextInput } from './ui'
 import { CategoryPicker } from './Categories'
+import { t } from '../lib/i18n'
 
-export const STATUS_LABEL: Record<Goal['status'], string> = { active: '진행 중', paused: '멈춤', done: '이룸' }
+export const statusLabel = (): Record<Goal['status'], string> => t({ active: '진행 중', paused: '멈춤', done: '이룸' }, { active: 'Active', paused: 'Paused', done: 'Done' })
 
 /** 할 일 묶음(계획) 고치기 — 이름·이유·기간·상태·카테고리, 삭제 */
 export function GoalSheet({ initial, onClose }: { initial: Goal; onClose: () => void }) {
@@ -35,30 +36,30 @@ export function GoalSheet({ initial, onClose }: { initial: Goal; onClose: () => 
   return (
     <Sheet
       open
-      title="묶음 수정"
+      title={t('묶음 수정', 'Edit list')}
       onClose={onClose}
       footer={
         <>
           <Button variant="danger" onClick={remove}>
-            삭제
+            {t('삭제', 'Delete')}
           </Button>
           <Button className="flex-1" onClick={save} disabled={!g.title?.trim()}>
-            저장
+            {t('저장', 'Save')}
           </Button>
         </>
       }
     >
-      <TextInput placeholder="이름" value={g.title ?? ''} onChange={(e) => set({ title: e.target.value })} />
-      <TextArea value={g.why ?? ''} onChange={(e) => set({ why: e.target.value })} placeholder="왜 하는지" />
+      <TextInput placeholder={t('이름', 'Name')} value={g.title ?? ''} onChange={(e) => set({ title: e.target.value })} />
+      <TextArea value={g.why ?? ''} onChange={(e) => set({ why: e.target.value })} placeholder={t('왜 하는지', 'Why')} />
       <div className="flex items-center gap-2">
-        <TextInput type="date" aria-label="시작일" value={g.startDate ?? ''} onChange={(e) => set({ startDate: e.target.value })} />
+        <TextInput type="date" aria-label={t('시작일', 'Start date')} value={g.startDate ?? ''} onChange={(e) => set({ startDate: e.target.value })} />
         <span className="text-ink-3 text-[17px]">~</span>
-        <TextInput type="date" aria-label="목표일" value={g.endDate ?? ''} onChange={(e) => set({ endDate: e.target.value })} />
+        <TextInput type="date" aria-label={t('목표일', 'Target date')} value={g.endDate ?? ''} onChange={(e) => set({ endDate: e.target.value })} />
       </div>
       <div className="flex gap-2">
-        {(Object.keys(STATUS_LABEL) as Goal['status'][]).map((s) => (
+        {(Object.keys(statusLabel()) as Goal['status'][]).map((s) => (
           <button key={s} type="button" onClick={() => set({ status: s })} className={`flex-1 h-11 rounded-xl text-[16px] font-semibold ${g.status === s ? 'bg-accent text-bg' : 'bg-card-2 text-ink-2'}`}>
-            {STATUS_LABEL[s]}
+            {statusLabel()[s]}
           </button>
         ))}
       </div>

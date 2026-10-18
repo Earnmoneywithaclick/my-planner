@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type PlanEvent, type TimetableBlock } from '../db'
-import { WEEKDAYS, WEEK_ORDER, fmt, friendlyDate, fromKey, nowHHmm, shiftKey, shortTime } from '../lib/date'
+import { weekdayShort, WEEK_ORDER, fmt, friendlyDate, fromKey, nowHHmm, shiftKey, shortTime } from '../lib/date'
 import { type AgendaItem, useAgenda, useNow, toggleAgendaDone } from '../lib/hooks'
 import { Card, IconButton, PageHeader, SectionTitle, Segmented } from '../components/ui'
 import { PlusIcon } from '../components/icons'
@@ -9,6 +9,7 @@ import { AgendaList } from '../components/AgendaList'
 import { MonthCalendar } from '../components/MonthCalendar'
 import { AnimatedList, FlashLi } from '../components/Animated'
 import { BlockSheet, EventSheet } from '../components/ScheduleSheets'
+import { t } from '../lib/i18n'
 
 type Mode = 'day' | 'week'
 
@@ -23,10 +24,10 @@ export default function Timetable() {
   return (
     <>
       <PageHeader
-        title="시간표"
+        title={t('시간표', 'Schedule')}
         right={
           <IconButton
-            label={mode === 'week' ? '반복 시간표 추가' : '일정 추가'}
+            label={mode === 'week' ? t('반복 시간표 추가', 'Add weekly item') : t('일정 추가', 'Add event')}
             className="bg-accent text-bg"
             onClick={() => (mode === 'week' ? setBlockEdit({ weekday }) : setEventEdit({ date: selected }))}
           >
@@ -39,8 +40,8 @@ export default function Timetable() {
           value={mode}
           onChange={setMode}
           options={[
-            { value: 'day', label: '날짜별' },
-            { value: 'week', label: '매주 반복' },
+            { value: 'day', label: t('날짜별', 'By date') },
+            { value: 'week', label: t('매주 반복', 'Weekly') },
           ]}
         />
       </div>
@@ -90,7 +91,7 @@ function DayView({
       </Card>
       {!!upcoming?.length && (
         <Card>
-          <SectionTitle>다가오는 일정</SectionTitle>
+          <SectionTitle>{t('다가오는 일정', 'Upcoming')}</SectionTitle>
           <AnimatedList className="divide-y divide-line">
             {upcoming.slice(0, 20).map((e) => (
               <FlashLi key={e.id} signal={`${e.title}|${e.date}|${e.endDate}|${e.start}|${e.color}`}>
@@ -131,7 +132,7 @@ function WeeklyView({ weekday, onWeekday, onBlock }: { weekday: number; onWeekda
             aria-pressed={d === weekday}
             className={`relative flex-1 h-12 rounded-xl text-[17px] font-semibold ${d === weekday ? 'bg-accent text-bg' : `bg-card ${d === 0 ? 'text-danger' : 'text-ink-2'}`}`}
           >
-            {WEEKDAYS[d]}
+            {weekdayShort(d)}
             {has.has(d) && d !== weekday && <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 size-1.5 rounded-full bg-accent" />}
           </button>
         ))}
