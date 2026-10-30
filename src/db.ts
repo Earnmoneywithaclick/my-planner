@@ -111,6 +111,14 @@ export interface BiblePlan {
   updatedAt: number
 }
 
+/** 오늘 화면 카드 순서·숨김 — 계정마다 하나 (id = layoutId()) */
+export interface Layout {
+  id: string
+  order: string[] // 카드 이름 순서 (TODAY_CARDS 의 key)
+  hidden: string[] // 숨긴 카드
+  updatedAt: number
+}
+
 export const newId = () => crypto.randomUUID()
 
 export const db = new Dexie('planner-sync', { addons: [dexieCloud] }) as Dexie & {
@@ -123,6 +131,7 @@ export const db = new Dexie('planner-sync', { addons: [dexieCloud] }) as Dexie &
   days: Table<DailyText, string>
   categories: Table<Category, string>
   bible: Table<BiblePlan, string>
+  layout: Table<Layout, string>
   /** 예전 일일 기록 표(날짜가 기본 키). Dexie Cloud 의 id 는 모든 계정에서 유일해야 해서 days 로 옮겼다. */
   dailyText: Table<Omit<DailyText, 'id'>, string>
 }
@@ -139,13 +148,14 @@ db.version(1).stores({
 db.version(2).stores({ days: 'id, date, read' })
 db.version(3).stores({ categories: 'id, color' })
 db.version(4).stores({ bible: 'id' })
+db.version(5).stores({ layout: 'id' })
 
 // 로그인 없이도 쓸 수 있다(손님 모드 — 기록은 이 기기에만). 로그인하면 그때까지의 기록이 그 계정으로 올라간다.
 // 개발 중에는 ?demo=<데모 사용자> 로 열면 Dexie Cloud 데모 계정으로 바로 로그인한다 (배포 빌드에는 들어가지 않음).
 const demoUser = import.meta.env.DEV ? new URLSearchParams(location.search).get('demo') : null
 db.cloud.configure({ databaseUrl: DATABASE_URL, requireAuth: demoUser ? { grant_type: 'demo', userId: demoUser } : false, customLoginGui: true, socialAuth: false })
 
-export const TABLES = ['goals', 'tasks', 'events', 'timetable', 'questions', 'answers', 'days', 'categories', 'bible'] as const
+export const TABLES = ['goals', 'tasks', 'events', 'timetable', 'questions', 'answers', 'days', 'categories', 'bible', 'layout'] as const
 const LEGACY_TABLES = ['goals', 'tasks', 'events', 'timetable', 'questions', 'answers', 'dailyText'] as const
 
 const GUEST_KEY = 'planner.guestKey'
@@ -175,6 +185,7 @@ export async function patchDay(date: string, patch: Partial<DailyText>) {
 export const categoryId = (color: string) => `cat-${color.replace('#', '')}-${uid()}`
 export const categorySlotId = (slot: number) => `catslot${slot}-${uid()}`
 export const biblePlanId = () => `bibleplan-${uid()}`
+export const layoutId = () => `layout-${uid()}`
 
 export const COLORS = ['#2f5d50', '#3b6ea5', '#b5543c', '#c58a1c', '#7a5aa6', '#4f8a3c', '#a2456e', '#5f6b73']
 /** 카테고리 색으로 고를 수 있는 색 (앞 8개가 기본 색) */
@@ -269,6 +280,7 @@ export function normalizeRows(rows: Rows): Rows {
   // 예전 백업의 dailyText 와 새 days 모두, 지금 계정 기준 id 로 다시 만든다
   out.days = [...(rows.dailyText ?? []), ...(rows.days ?? [])].map((r) => ({ ...strip(r), id: dayId(String(r.date)) }))
   out.bible = (rows.bible ?? []).slice(0, 1).map((r) => ({ ...strip(r), id: biblePlanId() }))
+  out.layout = (rows.layout ?? []).slice(0, 1).map((r) => ({ ...strip(r), id: layoutId() }))
   out.categories = (rows.categories ?? []).map((r) => ({ ...strip(r), id: r.slot != null ? categorySlotId(Number(r.slot)) : categoryId(String(r.color)) }))
   return out
 }
@@ -324,8 +336,8 @@ async function adoptGuestRecords() {
   const suffix = `-${key}`
   const me = `-${db.cloud.currentUserId}`
   const questionMap = new Map<string, string>()
-  await db.transaction('rw', [db.days, db.categories, db.bible, db.questions, db.answers], async () => {
-    for (const table of [db.days, db.categories, db.bible, db.questions] as Table<{ id: string }, string>[]) {
+  await db.transaction('rw', [db.days, db.categories, db.bible, db.layout, db.questions, db.answers], async () => {
+    for (const table of [db.days, db.categories, db.bible, db.layout, db.questions] as Table<{ id: string }, string>[]) {
       const rows = await table.filter((r) => r.id.endsWith(suffix)).toArray()
       for (const r of rows) {
         const id = r.id.slice(0, -suffix.length) + me

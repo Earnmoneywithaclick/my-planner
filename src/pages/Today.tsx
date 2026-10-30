@@ -14,10 +14,12 @@ import { TaskRow, TaskSheet } from '../components/TaskSheet'
 import { BlockSheet, EventSheet } from '../components/ScheduleSheets'
 import { AnimatedList } from '../components/Animated'
 import { t } from '../lib/i18n'
+import { useTodayLayout } from '../lib/layout'
 
 export default function Today() {
   const { today } = useNow()
   const agenda = useAgenda(today)
+  const layout = useTodayLayout()
   const [taskEdit, setTaskEdit] = useState<Partial<Task> | null>(null)
   const [eventEdit, setEventEdit] = useState<Partial<PlanEvent> | null>(null)
   const [blockEdit, setBlockEdit] = useState<Partial<TimetableBlock> | null>(null)
@@ -33,26 +35,32 @@ export default function Today() {
         }
       />
       <div className="gutter board">
-        <DailyTextCard key={today} date={today} />
-
-        <BibleCard key={`b-${today}`} today={today} />
-
-        <ServiceCard key={`s-${today}`} date={today} />
-
-        <Card>
-          <SectionTitle
-            right={
-              <IconButton label={t('오늘 일정 추가', 'Add event for today')} className="-my-2 -mr-2 text-accent" onClick={() => setEventEdit({ date: today })}>
-                <PlusIcon />
-              </IconButton>
-            }
-          >
-            {t('오늘 일정', 'Today’s schedule')}
-          </SectionTitle>
-          <AgendaList items={agenda} now={nowHHmm()} onOpen={(it) => (it.kind === 'block' ? setBlockEdit(it.block) : setEventEdit(it.event))} onToggle={(it) => toggleAgendaDone(it, today)} />
-        </Card>
-
-        <TodayTasks today={today} onOpen={setTaskEdit} />
+        {layout?.order
+          .filter((k) => !layout.hidden.includes(k))
+          .map((k) =>
+            k === 'dailyText' ? (
+              <DailyTextCard key={`d-${today}`} date={today} />
+            ) : k === 'bible' ? (
+              <BibleCard key={`b-${today}`} today={today} />
+            ) : k === 'service' ? (
+              <ServiceCard key={`s-${today}`} date={today} />
+            ) : k === 'agenda' ? (
+              <Card key="agenda">
+                <SectionTitle
+                  right={
+                    <IconButton label={t('오늘 일정 추가', 'Add event for today')} className="-my-2 -mr-2 text-accent" onClick={() => setEventEdit({ date: today })}>
+                      <PlusIcon />
+                    </IconButton>
+                  }
+                >
+                  {t('오늘 일정', 'Today’s schedule')}
+                </SectionTitle>
+                <AgendaList items={agenda} now={nowHHmm()} onOpen={(it) => (it.kind === 'block' ? setBlockEdit(it.block) : setEventEdit(it.event))} onToggle={(it) => toggleAgendaDone(it, today)} />
+              </Card>
+            ) : (
+              <TodayTasks key="tasks" today={today} onOpen={setTaskEdit} />
+            ),
+          )}
       </div>
 
       {taskEdit && <TaskSheet initial={taskEdit} onClose={() => setTaskEdit(null)} />}

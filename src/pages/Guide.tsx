@@ -161,6 +161,9 @@ function GuideKo() {
               <b>설정 &gt; 언어</b>: <b>한국어 · English</b> 중에서 골라요. 이 기기에만 적용돼요. 로그인 화면 오른쪽 위에서도 바꿀 수 있어요.
             </>,
             <>
+              <b>설정 &gt; 오늘 화면</b>: 오늘 화면에 나오는 카드(일용할 성구 · 성경 읽기 · 봉사 · 오늘 일정 · 오늘 할 일)의 순서를 위·아래 버튼으로 바꾸고, 동그라미를 눌러 보이거나 숨겨요. 사람마다(계정마다) 따로 저장되고, 로그인했으면 내 다른 기기에도 똑같이 맞춰져요.
+            </>,
+            <>
               <b>설정 &gt; 카테고리</b>: 이름을 바꾸고, 색 동그라미를 눌러 색을 바꿔요.
             </>,
             <>
@@ -303,6 +306,9 @@ function GuideEn() {
           items={[
             <>
               <b>Settings &gt; Language</b>: choose <b>한국어 · English</b>. It applies to this device only. You can also switch at the top right of the login screen.
+            </>,
+            <>
+              <b>Settings &gt; Today screen</b>: reorder the Today cards (Daily Text · Bible Reading · Field Service · Today’s schedule · Today’s to-dos) with the up/down buttons, and tap the circle to show or hide a card. It’s saved per person (per account) and, when you’re logged in, matches across your devices.
             </>,
             <>
               <b>Settings &gt; Categories</b>: rename them, and tap a color circle to change the color.

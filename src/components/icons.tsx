@@ -103,3 +103,13 @@ export const CheckIcon = (p: P) => (
     <path d="M5 12.5l4.5 4.5L19 7.5" />
   </Base>
 )
+export const ChevronUp = (p: P) => (
+  <Base {...p}>
+    <path d="M6 15l6-6 6 6" />
+  </Base>
+)
+export const ChevronDown = (p: P) => (
+  <Base {...p}>
+    <path d="M6 9l6 6 6-6" />
+  </Base>
+)

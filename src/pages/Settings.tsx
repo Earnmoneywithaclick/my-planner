@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom'
 import { useObservable } from 'dexie-react-hooks'
 import { db, PALETTE, replaceAll, TABLES } from '../db'
 import { todayKey } from '../lib/date'
-import { Button, Card, PageHeader, SectionTitle, Segmented, TextInput } from '../components/ui'
+import { Button, Card, CheckCircle, IconButton, PageHeader, SectionTitle, Segmented, TextInput } from '../components/ui'
 import { recolorCategory, renameCategory, useCategories } from '../components/Categories'
-import { ChevronLeft, ChevronRight } from '../components/icons'
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from '../components/icons'
+import { saveTodayLayout, todayCardName, useTodayLayout, type TodayCard } from '../lib/layout'
 import { setLang, t, useLang } from '../lib/i18n'
 
 const BACKUP_APP = 'my-planner'
@@ -176,6 +177,42 @@ function CategoryCard() {
   )
 }
 
+/** 오늘 화면 카드 순서 바꾸기 · 보이기/숨기기 (계정마다 따로, 기기끼리 동기화) */
+function LayoutCard() {
+  const layout = useTodayLayout()
+  if (!layout) return null
+  const { order, hidden } = layout
+  const move = (i: number, d: -1 | 1) => {
+    const next = [...order]
+    ;[next[i], next[i + d]] = [next[i + d], next[i]]
+    saveTodayLayout({ order: next, hidden })
+  }
+  const toggle = (k: TodayCard) => saveTodayLayout({ order, hidden: hidden.includes(k) ? hidden.filter((h) => h !== k) : [...hidden, k] })
+  return (
+    <Card>
+      <SectionTitle>{t('오늘 화면', 'Today screen')}</SectionTitle>
+      <ul className="divide-y divide-line">
+        {order.map((k, i) => {
+          const name = todayCardName(k)
+          const shown = !hidden.includes(k)
+          return (
+            <li key={k} className="flex items-center gap-2 py-1">
+              <CheckCircle checked={shown} onChange={() => toggle(k)} label={t(`${name} 보이기`, `Show ${name}`)} />
+              <span className={`flex-1 text-[16px] font-semibold ${shown ? '' : 'text-ink-3'}`}>{name}</span>
+              <IconButton label={t(`${name} 위로`, `Move ${name} up`)} disabled={i === 0} className="text-ink-2 disabled:opacity-25" onClick={() => move(i, -1)}>
+                <ChevronUp />
+              </IconButton>
+              <IconButton label={t(`${name} 아래로`, `Move ${name} down`)} disabled={i === order.length - 1} className="text-ink-2 disabled:opacity-25" onClick={() => move(i, 1)}>
+                <ChevronDown />
+              </IconButton>
+            </li>
+          )
+        })}
+      </ul>
+    </Card>
+  )
+}
+
 export default function Settings() {
   const [msg, setMsg] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
@@ -203,6 +240,8 @@ export default function Settings() {
         <LanguageCard />
 
         <SyncCard />
+
+        <LayoutCard />
 
         <CategoryCard />
 
