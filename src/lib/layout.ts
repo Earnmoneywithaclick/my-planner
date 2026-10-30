@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, layoutId } from '../db'
 import { t } from './i18n'
+import { useAccount } from './firebase'
 
 /** 오늘 화면에 놓이는 카드 (기본 순서) */
 export const TODAY_CARDS = ['dailyText', 'bible', 'service', 'agenda', 'tasks'] as const
@@ -31,7 +32,8 @@ function resolve(saved?: { order: string[]; hidden: string[] }): TodayLayout {
 
 /** 이 계정의 오늘 화면 배치. 불러오기 전에는 undefined */
 export function useTodayLayout(): TodayLayout | undefined {
-  const saved = useLiveQuery(async () => (await db.layout.get(layoutId())) ?? null, [])
+  const uid = useAccount()?.uid
+  const saved = useLiveQuery(async () => (await db.layout.get(layoutId())) ?? null, [uid])
   return saved === undefined ? undefined : resolve(saved ?? undefined)
 }
 

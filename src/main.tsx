@@ -2,7 +2,8 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { registerSW } from 'virtual:pwa-register'
 import App from './App'
-import { db, requestPersistence, startup } from './db'
+import { requestPersistence } from './db'
+import { startup } from './lib/sync'
 import './index.css'
 
 // 새 버전이 배포되면 바로 받아서 화면을 새로 고친다 (autoUpdate).
@@ -18,11 +19,6 @@ registerSW({
 })
 startup()
 requestPersistence()
-
-// 앱을 다시 열 때(홈 화면에서 돌아올 때)마다 다른 기기의 변경을 받아온다
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && db.cloud.currentUser.value.isLoggedIn) db.cloud.sync({ wait: false, purpose: 'pull' }).catch(() => {})
-})
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

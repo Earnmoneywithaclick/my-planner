@@ -1,25 +1,26 @@
-import { useEffect, useState } from 'react'
-import { useObservable } from 'dexie-react-hooks'
-import type { DXCAlert } from 'dexie-cloud-addon'
-import { db } from '../db'
+import { useState, useSyncExternalStore } from 'react'
+import { createUserWithEmailAndPassword, sendPasswordResetEmail, signInWithEmailAndPassword } from 'firebase/auth'
+import { auth } from '../lib/firebase'
 import { Button, TextInput } from './ui'
 import { setLang, t, useLang } from '../lib/i18n'
 
-const notRegistered = () => t('등록되지 않은 이메일이에요. 관리자에게 등록을 부탁하세요.', 'This email isn’t registered. Ask the admin to add it.')
-const seatsFull = () => t('사용자 자리가 다 찼어요. 관리자에게 알려주세요.', 'No user seats left. Please tell the admin.')
-const alertTexts = (): Record<string, string> => ({
-  INVALID_OTP: t('인증 코드가 맞지 않아요', 'That code isn’t right'),
-  INVALID_EMAIL: t('이메일 주소를 확인해 주세요', 'Please check the email address'),
-  OTP_SENT: t('메일로 인증 코드를 보냈어요', 'We emailed you a code'),
-  // 관리자가 등록한 이메일만 쓸 수 있게 막아 두었을 때
-  USER_NOT_REGISTERED: notRegistered(),
-  USER_NOT_ACCEPTED: notRegistered(),
-  LICENSE_LIMIT_REACHED: seatsFull(),
-  NO_SEATS_AVAILABLE: seatsFull(),
-  USER_DEACTIVATED: t('사용이 중지된 계정이에요.', 'This account has been deactivated.'),
-  LOGOUT_CONFIRMATION: t('아직 동기화되지 않은 기록이 있어요. 지금 로그아웃하면 그 기록은 사라져요.', 'Some data hasn’t synced yet. If you log out now, it will be lost.'),
-})
-const alertText = (a: DXCAlert) => alertTexts()[a.messageCode] ?? a.message
+// 로그인 화면을 여닫는 작은 저장소 (설정 > 동기화 > 로그인 버튼이 연다)
+let open = false
+const subs = new Set<() => void>()
+const setOpen = (v: boolean) => ((open = v), subs.forEach((s) => s()))
+export const openLogin = () => setOpen(true)
+
+const errorText = (code: string) =>
+  ({
+    'auth/invalid-credential': t('이메일이나 비밀번호가 맞지 않아요', 'Wrong email or password'),
+    'auth/wrong-password': t('이메일이나 비밀번호가 맞지 않아요', 'Wrong email or password'),
+    'auth/user-not-found': t('가입하지 않은 이메일이에요. 처음이면 가입해 주세요', 'No account with this email. Sign up first'),
+    'auth/invalid-email': t('이메일 주소를 확인해 주세요', 'Please check the email address'),
+    'auth/email-already-in-use': t('이미 가입한 이메일이에요. 로그인해 주세요', 'Already signed up. Please log in'),
+    'auth/weak-password': t('비밀번호는 6자 이상으로 해 주세요', 'Use at least 6 characters'),
+    'auth/too-many-requests': t('너무 많이 시도했어요. 잠시 뒤에 다시 해 주세요', 'Too many tries. Try again later'),
+    'auth/network-request-failed': t('인터넷 연결을 확인해 주세요', 'Check your internet connection'),
+  })[code] ?? t('잠시 뒤에 다시 해 주세요', 'Please try again later')
 
 /** 로그인 전에도 언어를 바꿀 수 있게 오른쪽 위에 */
 function LangSwitch() {
@@ -35,31 +36,50 @@ function LangSwitch() {
   )
 }
 
-/** Dexie Cloud 로그인(이메일 → 인증 코드) 화면. 기본 영어 대화상자 대신 앱 화면으로 보여준다. */
+type Mode = 'login' | 'signup' | 'reset'
+
+/** 이메일 + 비밀번호 로그인 화면. 처음에는 손님으로 쓰고, 설정에서 로그인할 때만 뜬다. */
 export function LoginGate() {
-  const ui = useObservable(db.cloud.userInteraction)
-  const [value, setValue] = useState('')
-  useEffect(() => setValue(''), [ui?.type])
+  const isOpen = useSyncExternalStore(
+    (s) => (subs.add(s), () => subs.delete(s)),
+    () => open,
+  )
+  const [mode, setMode] = useState<Mode>('login')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [msg, setMsg] = useState<{ error?: boolean; text: string } | null>(null)
+  const [busy, setBusy] = useState(false)
+  if (!isOpen) return null
 
-  const startLogin = () => db.cloud.login().catch(() => {})
+  const go = (m: Mode) => (setMode(m), setMsg(null))
+  const close = () => (setOpen(false), go('login'), setPassword(''))
 
-  // 처음에는 로그인 없이(손님으로) 쓰고, 설정에서 이메일로 로그인할 때만 이 화면이 뜬다
-  if (!ui) return null
-
-  const isEmail = ui.type === 'email'
-  const isOtp = ui.type === 'otp'
-  const submit = () => {
-    if (isEmail) ui.onSubmit({ email: value.trim() })
-    else if (isOtp) ui.onSubmit({ otp: value.trim() })
-    else ui.onSubmit({})
+  async function submit() {
+    const mail = email.trim().toLowerCase()
+    setBusy(true)
+    setMsg(null)
+    try {
+      if (mode === 'reset') {
+        await sendPasswordResetEmail(auth, mail)
+        setMsg({ text: t('비밀번호를 바꾸는 메일을 보냈어요', 'We emailed you a link to reset your password') })
+        return
+      }
+      if (mode === 'signup') await createUserWithEmailAndPassword(auth, mail, password)
+      else await signInWithEmailAndPassword(auth, mail, password)
+      close()
+    } catch (e) {
+      setMsg({ error: true, text: errorText((e as { code?: string }).code ?? '') })
+    } finally {
+      setBusy(false)
+    }
   }
 
-  const title = isEmail ? t('로그인', 'Log in') : isOtp ? t('인증 코드 입력', 'Enter code') : ui.type === 'logout-confirmation' ? t('로그아웃', 'Log out') : t('알림', 'Notice')
-  const submitLabel = isEmail ? t('인증 코드 받기', 'Get code') : isOtp ? t('로그인', 'Log in') : ui.type === 'logout-confirmation' ? t('로그아웃', 'Log out') : t('확인', 'OK')
+  const title = { login: t('로그인', 'Log in'), signup: t('처음 가입하기', 'Sign up'), reset: t('비밀번호 찾기', 'Reset password') }[mode]
+  const needsPassword = mode !== 'reset'
 
   return (
     <div className="fixed inset-0 z-[60] bg-bg flex flex-col justify-center px-6 pt-safe pb-safe" role="dialog" aria-modal="true" aria-label={title}>
-      {(isEmail || isOtp) && <LangSwitch />}
+      <LangSwitch />
       <form
         className="space-y-4 max-w-sm w-full mx-auto"
         onSubmit={(e) => {
@@ -68,34 +88,37 @@ export function LoginGate() {
         }}
       >
         <h1 className="text-[28px] font-bold">{title}</h1>
-        {ui.alerts.map((a, i) => (
-          <p key={i} className={`text-[16px] leading-relaxed ${a.type === 'error' ? 'text-danger' : 'text-ink-2'}`}>
-            {alertText(a)}
-          </p>
-        ))}
-        {isEmail && (
-          <TextInput autoFocus type="email" inputMode="email" autoComplete="email" placeholder={t('이메일', 'Email')} value={value} onChange={(e) => setValue(e.target.value)} />
+        {msg && <p className={`text-[16px] leading-relaxed ${msg.error ? 'text-danger' : 'text-accent'}`}>{msg.text}</p>}
+        <TextInput autoFocus type="email" inputMode="email" autoComplete="email" placeholder={t('이메일', 'Email')} value={email} onChange={(e) => setEmail(e.target.value)} />
+        {needsPassword && (
+          <TextInput
+            type="password"
+            autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+            placeholder={mode === 'signup' ? t('새 비밀번호 (6자 이상)', 'New password (6+ characters)') : t('비밀번호', 'Password')}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
         )}
-        {isOtp && (
-          <TextInput autoFocus inputMode="text" autoComplete="one-time-code" autoCapitalize="characters" placeholder={t('인증 코드', 'Code')} value={value} onChange={(e) => setValue(e.target.value)} />
-        )}
-        <Button type="submit" className="w-full" disabled={(isEmail || isOtp) && !value.trim()}>
-          {submitLabel}
+        <Button type="submit" className="w-full" disabled={busy || !email.trim() || (needsPassword && !password)}>
+          {{ login: t('로그인', 'Log in'), signup: t('가입하고 로그인', 'Sign up'), reset: t('메일 보내기', 'Send email') }[mode]}
         </Button>
-        {(isEmail || isOtp || ui.type === 'logout-confirmation') && (
-          <Button
-            type="button"
-            variant="ghost"
-            className="w-full"
-            onClick={() => {
-              ui.onCancel()
-              // 인증 코드 화면에서 돌아가면 이메일 입력부터 다시
-              if (isOtp) setTimeout(startLogin, 0)
-            }}
-          >
-            {isOtp ? t('이메일 다시 입력', 'Use a different email') : t('취소', 'Cancel')}
+        {mode === 'login' ? (
+          <div className="flex gap-2">
+            <Button type="button" variant="soft" className="flex-1" onClick={() => go('signup')}>
+              {t('처음이에요', 'I’m new')}
+            </Button>
+            <Button type="button" variant="ghost" className="flex-1" onClick={() => go('reset')}>
+              {t('비밀번호 찾기', 'Forgot password')}
+            </Button>
+          </div>
+        ) : (
+          <Button type="button" variant="soft" className="w-full" onClick={() => go('login')}>
+            {t('로그인으로 돌아가기', 'Back to log in')}
           </Button>
         )}
+        <Button type="button" variant="ghost" className="w-full" onClick={close}>
+          {t('취소', 'Cancel')}
+        </Button>
       </form>
     </div>
   )

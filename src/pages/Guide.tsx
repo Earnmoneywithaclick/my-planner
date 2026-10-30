@@ -87,12 +87,13 @@ function GuideKo() {
         <Steps
           items={[
             <>
-              <b>설정 &gt; 동기화</b>에서 <b>이메일로 로그인</b>을 눌러요. 등록된 이메일만 로그인할 수 있어요.
+              <b>설정 &gt; 동기화</b>에서 <b>이메일로 로그인</b>을 눌러요.
             </>,
             <>
-              이메일을 입력하고 <b>인증 코드 받기</b> → 메일로 온 코드를 넣고 <b>로그인</b>. 그때까지의 기록이 계정으로 함께 올라가요.
+              처음이면 <b>처음이에요</b> → 이메일과 새 비밀번호(6자 이상)를 넣고 <b>가입하고 로그인</b>. 그다음부터는 이메일과 비밀번호로 <b>로그인</b>. 그때까지의 기록이 계정으로 함께 올라가요.
             </>,
-            <>다른 기기에서도 같은 이메일로 로그인하면 기록이 맞춰져요.</>,
+            <>다른 기기에서도 같은 이메일로 로그인하면 기록이 바로바로 맞춰져요.</>,
+            <>비밀번호를 잊었으면 <b>비밀번호 찾기</b> → 메일로 온 링크에서 새 비밀번호를 정해요.</>,
           ]}
         />
       </Section>
@@ -164,6 +165,9 @@ function GuideKo() {
               <b>설정 &gt; 오늘 화면</b>: 오늘 화면에 나오는 카드(일용할 성구 · 성경 읽기 · 봉사 · 오늘 일정 · 오늘 할 일)의 순서를 위·아래 버튼으로 바꾸고, 동그라미를 눌러 보이거나 숨겨요. 사람마다(계정마다) 따로 저장되고, 로그인했으면 내 다른 기기에도 똑같이 맞춰져요.
             </>,
             <>
+              <b>설정 &gt; 기능 요청</b>: 원하는 기능을 적고 <b>보내기</b>를 눌러요. 로그인하지 않아도 보낼 수 있고, 앱을 만든 사람에게 전달돼요.
+            </>,
+            <>
               <b>설정 &gt; 카테고리</b>: 이름을 바꾸고, 색 동그라미를 눌러 색을 바꿔요.
             </>,
             <>
@@ -177,13 +181,10 @@ function GuideKo() {
         <Bullets
           items={[
             <>
-              <b>인증 메일이 안 와요</b> → 스팸함을 확인하고, <b>이메일 다시 입력</b>으로 다시 받아요.
-            </>,
-            <>
               <b>새 기능이 안 보여요</b> → 앱을 완전히 닫았다가 다시 열어요. 그래도 그대로면 한 번 더.
             </>,
             <>
-              <b>아이패드에 기록이 안 나와요</b> → 같은 이메일인지 확인하고 설정에서 <b>지금 동기화</b>.
+              <b>아이패드에 기록이 안 나와요</b> → 같은 이메일인지, 인터넷이 연결됐는지 확인해요. 설정 &gt; 동기화에 <b>동기화 오류</b>가 보이면 <b>다시 시도</b>.
             </>,
             <>
               <b>주소창이 보여요</b> → Safari로 연 거예요. 홈 화면 아이콘으로 열어요.
@@ -234,12 +235,13 @@ function GuideEn() {
         <Steps
           items={[
             <>
-              In <b>Settings &gt; Sync</b>, tap <b>Log in with email</b>. Only registered emails can log in.
+              In <b>Settings &gt; Sync</b>, tap <b>Log in with email</b>.
             </>,
             <>
-              Enter your email, tap <b>Get code</b>, enter the code from the email and tap <b>Log in</b>. Everything so far is uploaded to your account.
+              The first time, tap <b>I’m new</b>, enter your email and a new password (6+ characters) and tap <b>Sign up</b>. After that, <b>Log in</b> with your email and password. Everything so far is uploaded to your account.
             </>,
-            <>Log in with the same email on your other devices and they stay in sync.</>,
+            <>Log in with the same email on your other devices and they stay in sync right away.</>,
+            <>Forgot your password? Tap <b>Forgot password</b> and set a new one from the link in the email.</>,
           ]}
         />
       </Section>
@@ -311,6 +313,9 @@ function GuideEn() {
               <b>Settings &gt; Today screen</b>: reorder the Today cards (Daily Text · Bible Reading · Field Service · Today’s schedule · Today’s to-dos) with the up/down buttons, and tap the circle to show or hide a card. It’s saved per person (per account) and, when you’re logged in, matches across your devices.
             </>,
             <>
+              <b>Settings &gt; Feature request</b>: describe a feature you’d like and tap <b>Send</b>. You don’t need to log in. It goes to the person who made the app.
+            </>,
+            <>
               <b>Settings &gt; Categories</b>: rename them, and tap a color circle to change the color.
             </>,
             <>
@@ -324,13 +329,10 @@ function GuideEn() {
         <Bullets
           items={[
             <>
-              <b>The code email didn’t arrive</b> → check your spam folder, then use <b>Use a different email</b> to request it again.
-            </>,
-            <>
               <b>I don’t see a new feature</b> → fully close the app and open it again. If nothing changes, do it once more.
             </>,
             <>
-              <b>My data isn’t showing on iPad</b> → make sure it’s the same email, then tap <b>Sync now</b> in Settings.
+              <b>My data isn’t showing on iPad</b> → make sure it’s the same email and you’re online. If Settings &gt; Sync shows <b>Sync error</b>, tap <b>Try again</b>.
             </>,
             <>
               <b>I see the address bar</b> → you opened it in Safari. Open it from the Home Screen icon instead.

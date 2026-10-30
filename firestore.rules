@@ -1,0 +1,38 @@
+rules_version = '2';
+
+// 나의 플래너 — Firestore 보안 규칙 (Firebase 콘솔 > Firestore > 규칙 에 붙여 넣는다)
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOwner() {
+      return request.auth != null && request.auth.token.email == 'hawon1914@gmail.com';
+    }
+    // 이메일로 가입한 사람 (익명 로그인한 손님은 이메일이 없다)
+    function hasEmail() {
+      return request.auth != null && request.auth.token.email != null;
+    }
+
+    // 각자의 기록: 본인만
+    match /users/{uid}/{table}/{id} {
+      allow read, write: if hasEmail() && request.auth.uid == uid;
+    }
+
+    // 가입한 사람 목록: 각자 자기 것만 쓰고, 목록은 주인만 본다
+    match /members/{uid} {
+      allow create, update: if hasEmail() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['email', 'createdAt', 'lastSeen'])
+        && request.resource.data.email == request.auth.token.email;
+      allow read: if isOwner() || (request.auth != null && request.auth.uid == uid);
+    }
+
+    // 기능 요청: 보내기는 로그인(익명 포함)한 누구나, 읽기·고치기·지우기는 주인만
+    match /requests/{id} {
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['text', 'fromEmail', 'createdAt'])
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 2000
+        && (!('fromEmail' in request.resource.data) || request.resource.data.fromEmail == request.auth.token.email);
+      allow read, update, delete: if isOwner();
+    }
+  }
+}

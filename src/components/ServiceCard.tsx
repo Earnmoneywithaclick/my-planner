@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useLiveQuery, useObservable } from 'dexie-react-hooks'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { useAccount } from '../lib/firebase'
 import { addMonths, endOfMonth, startOfMonth } from 'date-fns'
 import { db, dayId, patchDay } from '../db'
 import { fmt, fromKey, toKey } from '../lib/date'
@@ -25,7 +26,7 @@ async function addService(date: string, delta: number) {
 
 /** 그 달에 봉사한 날들 (날짜순) */
 function useServiceMonth(monthStart: string) {
-  const userId = useObservable(db.cloud.currentUser)?.userId
+  const userId = useAccount()?.uid
   return useLiveQuery(async () => {
     const end = toKey(endOfMonth(fromKey(monthStart)))
     const days = await db.days.where('date').between(monthStart, end, true, true).toArray()
@@ -60,7 +61,7 @@ function Steps({ date, withMinus = true }: { date: string; withMinus?: boolean }
 
 /** 오늘 화면의 봉사 카드 — 오늘 시간을 더하고, 이번 달 합계를 본다. 누르면 달별 기록(결산). */
 export function ServiceCard({ date }: { date: string }) {
-  const userId = useObservable(db.cloud.currentUser)?.userId
+  const userId = useAccount()?.uid
   const todayMin = useLiveQuery(async () => (await db.days.get(dayId(date)))?.serviceMin ?? 0, [date, userId])
   const month = useServiceMonth(toKey(startOfMonth(fromKey(date))))
   const [open, setOpen] = useState(false)
@@ -92,7 +93,7 @@ function ServiceSheet({ today, onClose }: { today: string; onClose: () => void }
   const [monthStart, setMonthStart] = useState(() => toKey(startOfMonth(fromKey(today))))
   const [editDate, setEditDate] = useState(today)
   const month = useServiceMonth(monthStart)
-  const userId = useObservable(db.cloud.currentUser)?.userId
+  const userId = useAccount()?.uid
   const editMin = useLiveQuery(async () => (await db.days.get(dayId(editDate)))?.serviceMin ?? 0, [editDate, userId])
   const move = (n: number) => setMonthStart(toKey(addMonths(fromKey(monthStart), n)))
 

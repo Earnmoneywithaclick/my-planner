@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { useLiveQuery, useObservable } from 'dexie-react-hooks'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { useAccount } from '../lib/firebase'
 import { eachDayOfInterval, endOfMonth, startOfMonth } from 'date-fns'
 import { db, dayId, patchDay as patchDaily } from '../db'
 import { dailyTextUrl, fromKey, shiftKey, toKey } from '../lib/date'
@@ -41,7 +42,7 @@ function DailyCheck({ label, checked, onToggle }: { label: string; checked: bool
 
 export function DailyTextCard({ date }: { date: string }) {
   // id 에 계정이 들어가므로, 로그인이 끝나 계정이 바뀌면 다시 읽는다
-  const userId = useObservable(db.cloud.currentUser)?.userId
+  const userId = useAccount()?.uid
   const rec = useLiveQuery(() => db.days.get(dayId(date)), [date, userId])
   const readKeys = useLiveQuery(async () => (await db.days.where('read').equals(1).toArray()).map((d) => d.date), [])
   const [memo, setMemo] = useState<string | null>(null)

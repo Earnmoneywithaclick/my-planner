@@ -13,8 +13,8 @@
     "@formkit/auto-animate": "^0.10.0",
     "date-fns": "^4.4.0",
     "dexie": "^4.4.6",
-    "dexie-cloud-addon": "^4.4.15",
     "dexie-react-hooks": "^4.4.0",
+    "firebase": "^13.1.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-router-dom": "^7.18.4"

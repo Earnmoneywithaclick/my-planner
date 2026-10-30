@@ -1,11 +1,9 @@
 import Dexie, { type Table } from 'dexie'
-import dexieCloud from 'dexie-cloud-addon'
+import { accountUser } from './lib/firebase'
 
 // 불리언 값은 IndexedDB 인덱스에 쓸 수 있도록 0/1 로 저장한다.
-// 기록은 Dexie Cloud 로 아이폰·아이패드 사이에 동기화된다. 기기끼리 번호가 겹치지 않도록
-// 모든 기록은 무작위 문자열 id(newId)를 쓴다.
-
-export const DATABASE_URL = 'https://zpf19f0bm.dexie.cloud'
+// 기록은 먼저 이 기기(IndexedDB)에 저장되고, 로그인했으면 Firebase 로 아이폰·아이패드 사이에 동기화된다 (lib/sync.ts).
+// 기기끼리 번호가 겹치지 않도록 모든 기록은 무작위 문자열 id(newId)를 쓴다.
 
 export interface Goal {
   id: string
@@ -119,9 +117,10 @@ export interface Layout {
   updatedAt: number
 }
 
+
 export const newId = () => crypto.randomUUID()
 
-export const db = new Dexie('planner-sync', { addons: [dexieCloud] }) as Dexie & {
+export const db = new Dexie('planner-local') as Dexie & {
   goals: Table<Goal, string>
   tasks: Table<Task, string>
   events: Table<PlanEvent, string>
@@ -132,8 +131,6 @@ export const db = new Dexie('planner-sync', { addons: [dexieCloud] }) as Dexie &
   categories: Table<Category, string>
   bible: Table<BiblePlan, string>
   layout: Table<Layout, string>
-  /** 예전 일일 기록 표(날짜가 기본 키). Dexie Cloud 의 id 는 모든 계정에서 유일해야 해서 days 로 옮겼다. */
-  dailyText: Table<Omit<DailyText, 'id'>, string>
 }
 
 db.version(1).stores({
@@ -143,22 +140,19 @@ db.version(1).stores({
   timetable: 'id, weekday',
   questions: 'id, category, nextReview',
   answers: 'id, questionId, date',
-  dailyText: 'date, read',
+  days: 'id, date, read',
+  categories: 'id, color',
+  bible: 'id',
+  layout: 'id',
 })
-db.version(2).stores({ days: 'id, date, read' })
-db.version(3).stores({ categories: 'id, color' })
-db.version(4).stores({ bible: 'id' })
-db.version(5).stores({ layout: 'id' })
 
-// 로그인 없이도 쓸 수 있다(손님 모드 — 기록은 이 기기에만). 로그인하면 그때까지의 기록이 그 계정으로 올라간다.
-// 개발 중에는 ?demo=<데모 사용자> 로 열면 Dexie Cloud 데모 계정으로 바로 로그인한다 (배포 빌드에는 들어가지 않음).
-const demoUser = import.meta.env.DEV ? new URLSearchParams(location.search).get('demo') : null
-db.cloud.configure({ databaseUrl: DATABASE_URL, requireAuth: demoUser ? { grant_type: 'demo', userId: demoUser } : false, customLoginGui: true, socialAuth: false })
-
+/** 동기화하고 백업하는 표 */
 export const TABLES = ['goals', 'tasks', 'events', 'timetable', 'questions', 'answers', 'days', 'categories', 'bible', 'layout'] as const
+export type TableName = (typeof TABLES)[number]
 const LEGACY_TABLES = ['goals', 'tasks', 'events', 'timetable', 'questions', 'answers', 'dailyText'] as const
 
-const GUEST_KEY = 'planner.guestKey'
+export const GUEST_KEY = 'planner.guestKey'
+
 /** 로그인하지 않은 기기의 고유 이름. 손님 기록의 id 가 다른 기기의 손님 기록과 겹치지 않게 한다. */
 function guestKey() {
   try {
@@ -170,9 +164,9 @@ function guestKey() {
   }
 }
 /** 고정 id 에 붙이는 계정 표시 — 로그인했으면 계정 id, 아니면 이 기기의 손님 이름 */
-const uid = () => (db.cloud.currentUser.value.isLoggedIn ? db.cloud.currentUserId : guestKey())
+const uid = () => accountUser()?.uid ?? guestKey()
 
-/** 날짜별 기록(성구·기도·연구)의 id. 날짜만 쓰면 다른 계정과 겹쳐 서버가 거절하므로 계정 id 를 붙인다. */
+/** 날짜별 기록(성구·기도·연구)의 id. 계정 id 를 붙여 손님 기록과 계정 기록을 구분한다. */
 export const dayId = (date: string) => `day-${date}-${uid()}`
 /** 그 날짜의 기록(성구·기도·연구·봉사)을 일부만 고친다. 없으면 새로 만든다. */
 export async function patchDay(date: string, patch: Partial<DailyText>) {
@@ -211,27 +205,8 @@ const DEFAULT_QUESTIONS: [string, string][] = [
 ]
 
 // 기본 질문은 같은 계정이면 기기가 달라도 같은 id 를 써서 하나로 합쳐지게 한다.
-// Dexie Cloud 의 id 는 모든 계정을 통틀어 유일해야 하므로 계정 id 를 붙인다.
+// 계정 id 를 붙여 다른 계정의 기록과 섞이지 않게 한다.
 const defaultQuestionId = (i: number) => `qdefault${String(i + 1).padStart(2, '0')}-${uid()}`
-
-/** 예전 dailyText 표(날짜 기본 키)의 기록을 days 표로 옮긴다. 이미 days 에 같은 날이 있으면 그대로 둔다. */
-async function migrateDailyTextTable() {
-  const old = await db.dailyText.toArray()
-  if (!old.length) return
-  await db.transaction('rw', db.days, db.dailyText, async () => {
-    const ids = old.map((r) => dayId(r.date))
-    const existing = await db.days.bulkGet(ids)
-    const rows = old.map((r, i) => ({ ...r, id: ids[i] })).filter((_, i) => !existing[i])
-    if (rows.length) await db.days.bulkAdd(rows)
-    await db.dailyText.clear()
-  })
-}
-
-/** 계정 id 가 붙기 전의 기본 질문 id(qdefault01 등)를 가리키는 답을 새 id 로 고친다. */
-async function repairDefaultAnswers() {
-  const old = await db.answers.filter((a) => /^qdefault\d\d$/.test(a.questionId)).toArray()
-  for (const a of old) await db.answers.update(a.id, { questionId: defaultQuestionId(Number(a.questionId.slice(8)) - 1) })
-}
 
 type Rows = Partial<Record<(typeof TABLES)[number] | 'dailyText', Record<string, unknown>[]>>
 
@@ -285,19 +260,27 @@ export function normalizeRows(rows: Rows): Rows {
   return out
 }
 
-/** 모든 표를 지우고 rows 로 채운다 (백업 불러오기) */
+
+/** 모든 표를 지우고 rows 로 채운다 (백업 불러오기). 하나씩 지워야 동기화에도 삭제가 전해진다. */
 export async function replaceAll(rows: Rows) {
   const data = normalizeRows(rows)
   await db.transaction('rw', TABLES.map((t) => db.table(t)), async () => {
     for (const t of TABLES) {
-      await db.table(t).clear()
+      await db.table(t).toCollection().delete()
       if (data[t]?.length) await db.table(t).bulkPut(data[t]!)
     }
   })
 }
 
+/** 모든 표의 기록을 지운다 (동기화 중이면 계정의 기록도 지워진다) */
+export async function deleteAll() {
+  await db.transaction('rw', TABLES.map((t) => db.table(t)), async () => {
+    for (const t of TABLES) await db.table(t).toCollection().delete()
+  })
+}
+
 /** 동기화 이전 버전(이 기기에만 저장하던 'planner' DB)의 기록을 한 번만 옮겨오고 옛 DB 는 지운다. */
-async function migrateLegacyDb() {
+export async function migrateLegacyDb() {
   if (!(await Dexie.exists('planner'))) return
   const legacy = new Dexie('planner')
   legacy.version(1).stores({
@@ -320,12 +303,39 @@ async function migrateLegacyDb() {
   await Dexie.delete('planner')
 }
 
+
+const CLOUD_MIGRATED = 'planner.cloudMigrated'
+/**
+ * Dexie Cloud 로 동기화하던 버전('planner-sync' DB)의 기록을 한 번만 이 기기의 새 DB 로 옮긴다.
+ * 옮긴 기록은 손님 기록이 되고, 이메일로 로그인하면 그 계정으로 올라간다. 옛 DB 는 만일을 위해 남겨 둔다.
+ */
+export async function migrateFromDexieCloud() {
+  try {
+    if (localStorage.getItem(CLOUD_MIGRATED)) return
+  } catch {
+    return
+  }
+  if (await Dexie.exists('planner-sync')) {
+    const old = new Dexie('planner-sync')
+    await old.open()
+    const rows: Rows = {}
+    for (const t of [...TABLES, 'dailyText'] as const) if (old.tables.some((x) => x.name === t)) rows[t] = await old.table(t).toArray()
+    old.close()
+    const data = normalizeRows(rows)
+    await db.transaction('rw', TABLES.map((t) => db.table(t)), async () => {
+      for (const t of TABLES) if (data[t]?.length) await db.table(t).bulkPut(data[t]!)
+    })
+  }
+  localStorage.setItem(CLOUD_MIGRATED, '1')
+}
+
 /**
  * 손님으로 쓰다가 로그인하면, 손님 이름이 붙은 고정 id(날짜별 기록·카테고리·성경 계획·기본 질문)를 계정 id 로 바꾼다.
  * 계정에 같은 기록이 이미 있으면 계정 쪽을 두고 비어 있는 값만 손님 기록으로 채운다.
  */
-async function adoptGuestRecords() {
-  if (!db.cloud.currentUser.value.isLoggedIn) return
+export async function adoptGuestRecords() {
+  const me = accountUser()
+  if (!me) return
   let key: string | null = null
   try {
     key = localStorage.getItem(GUEST_KEY)
@@ -334,13 +344,13 @@ async function adoptGuestRecords() {
   }
   if (!key) return
   const suffix = `-${key}`
-  const me = `-${db.cloud.currentUserId}`
+  const mine = `-${me.uid}`
   const questionMap = new Map<string, string>()
   await db.transaction('rw', [db.days, db.categories, db.bible, db.layout, db.questions, db.answers], async () => {
     for (const table of [db.days, db.categories, db.bible, db.layout, db.questions] as Table<{ id: string }, string>[]) {
       const rows = await table.filter((r) => r.id.endsWith(suffix)).toArray()
       for (const r of rows) {
-        const id = r.id.slice(0, -suffix.length) + me
+        const id = r.id.slice(0, -suffix.length) + mine
         const cur = await table.get(id)
         await table.delete(r.id)
         await table.put(cur ? { ...r, ...cur, id } : { ...r, id })
@@ -351,35 +361,6 @@ async function adoptGuestRecords() {
   })
 }
 
-/** 로그인 → 서버 기록 받아오기 → 옛 기록 옮기기 */
-export async function startup() {
-  await db.open()
-  // 저장된 로그인 정보를 다 읽을 때까지 기다린다 (그 전에는 손님처럼 보여서 손님 id 로 기록이 생길 수 있다)
-  await new Promise<void>((resolve) => {
-    const sub = db.cloud.currentUser.subscribe((u) => {
-      if ((u as { isLoading?: boolean }).isLoading) return
-      resolve()
-      setTimeout(() => sub.unsubscribe())
-    })
-  })
-  // 서버 기록을 먼저 받아오되, 첫 로그인 직후에는 이 대기가 끝나지 않는 경우가 있어 최대 8초만 기다린다.
-  // 오프라인이면 다음에 연결될 때 자동으로 동기화된다.
-  await Promise.race([db.cloud.sync({ wait: true, purpose: 'pull' }).catch(() => {}), new Promise((r) => setTimeout(r, 8000))])
-  await migrateLegacyDb()
-  await migrateDailyTextTable()
-  await repairDefaultAnswers()
-  await adoptGuestRecords()
-  // 손님으로 쓰다가 로그인한 경우
-  let wasLoggedIn = db.cloud.currentUser.value.isLoggedIn
-  db.cloud.currentUser.subscribe((u) => {
-    // 계정의 서버 기록을 먼저 받아온 뒤에 합쳐야 서버 기록을 손님 기록으로 덮어쓰지 않는다
-    if (u.isLoggedIn && !wasLoggedIn)
-      Promise.race([db.cloud.sync({ wait: true, purpose: 'pull' }).catch(() => {}), new Promise((r) => setTimeout(r, 8000))])
-        .then(adoptGuestRecords)
-        .catch(() => {})
-    wasLoggedIn = !!u.isLoggedIn
-  })
-}
 
 /** 기기가 저장 공간을 임의로 비우지 않도록 요청한다. */
 export async function requestPersistence(): Promise<boolean> {

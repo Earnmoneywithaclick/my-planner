@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useLiveQuery, useObservable } from 'dexie-react-hooks'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { useAccount } from '../lib/firebase'
 import { db, patchDay, type DailyText } from '../db'
 import { dailyTextUrl, fmt } from '../lib/date'
 import { Sheet, TextArea, TextInput } from './ui'
@@ -39,7 +40,7 @@ function MemoItem({ day }: { day: DailyText }) {
 
 /** 지금까지 적은 일용할 성구 묵상 메모 모아 보기 (최신순, 검색) */
 export function MemoSheet({ onClose }: { onClose: () => void }) {
-  const userId = useObservable(db.cloud.currentUser)?.userId
+  const userId = useAccount()?.uid
   const [query, setQuery] = useState('')
   const memos = useLiveQuery(
     async () =>

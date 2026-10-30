@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useLiveQuery, useObservable } from 'dexie-react-hooks'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { useAccount } from '../lib/firebase'
 import { addDays, differenceInCalendarDays } from 'date-fns'
 import { biblePlanId, db, dayId, patchDay, type BiblePlan } from '../db'
 import { BOOKS, bookName, scopes, chaptersOf, rangeLabel, readingUrl } from '../lib/bible'
@@ -18,7 +19,7 @@ const periods = (): [string, number][] => [
 
 /** 계획 + 오늘 기록 */
 function usePlan(today: string) {
-  const userId = useObservable(db.cloud.currentUser)?.userId
+  const userId = useAccount()?.uid
   return useLiveQuery(async () => {
     const [plan, day] = await Promise.all([db.bible.get(biblePlanId()), db.days.get(dayId(today))])
     return { plan, day }
