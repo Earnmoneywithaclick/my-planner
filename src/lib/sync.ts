@@ -212,7 +212,8 @@ export async function startup() {
   await db.open()
   await auth.authStateReady()
   await migrateLegacyDb()
-  await migrateFromDexieCloud()
+  // 옛 기록을 새로 옮겼으면, 로그인한 계정에도 다시 올리도록 '처음 동기화'부터 한다
+  if (await migrateFromDexieCloud()) localStorage.removeItem(JOINED)
   onAuthStateChanged(auth, (u) => {
     const uid = u && !u.isAnonymous ? u.uid : null
     if (uid === syncUid) return

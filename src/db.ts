@@ -304,29 +304,48 @@ export async function migrateLegacyDb() {
 }
 
 
-const CLOUD_MIGRATED = 'planner.cloudMigrated'
+// 첫 버전은 엉뚱한 DB 이름('planner-sync')을 봐서 아무것도 옮기지 못했다 — 표시 이름을 바꿔 다시 옮긴다
+const CLOUD_MIGRATED = 'planner.cloudMigrated2'
+/** Dexie Cloud 는 DB 이름 뒤에 데이터베이스 id 를 붙여 저장한다 ('planner-sync-zpf19f0bm') */
+const CLOUD_DB = 'planner-sync-zpf19f0bm'
+
 /**
- * Dexie Cloud 로 동기화하던 버전('planner-sync' DB)의 기록을 한 번만 이 기기의 새 DB 로 옮긴다.
- * 옮긴 기록은 손님 기록이 되고, 이메일로 로그인하면 그 계정으로 올라간다. 옛 DB 는 만일을 위해 남겨 둔다.
+ * Dexie Cloud 로 동기화하던 버전의 기록을 한 번만 이 기기의 새 DB 로 옮긴다. 옮긴 기록 수를 돌려준다.
+ * 로그인 전이면 손님 기록이 되고(로그인하면 계정으로 올라간다), 이미 있는 기록은 건드리지 않는다. 옛 DB 는 만일을 위해 남겨 둔다.
  */
-export async function migrateFromDexieCloud() {
+export async function migrateFromDexieCloud(): Promise<number> {
   try {
-    if (localStorage.getItem(CLOUD_MIGRATED)) return
+    if (localStorage.getItem(CLOUD_MIGRATED)) return 0
   } catch {
-    return
+    return 0
   }
-  if (await Dexie.exists('planner-sync')) {
-    const old = new Dexie('planner-sync')
+  let names: string[]
+  try {
+    names = (await indexedDB.databases()).map((d) => d.name ?? '').filter((n) => n.startsWith('planner-sync-'))
+  } catch {
+    names = (await Dexie.exists(CLOUD_DB)) ? [CLOUD_DB] : []
+  }
+  let added = 0
+  for (const name of names) {
+    const old = new Dexie(name)
     await old.open()
     const rows: Rows = {}
     for (const t of [...TABLES, 'dailyText'] as const) if (old.tables.some((x) => x.name === t)) rows[t] = await old.table(t).toArray()
     old.close()
     const data = normalizeRows(rows)
     await db.transaction('rw', TABLES.map((t) => db.table(t)), async () => {
-      for (const t of TABLES) if (data[t]?.length) await db.table(t).bulkPut(data[t]!)
+      for (const t of TABLES) {
+        const list = (data[t] ?? []) as { id: string }[]
+        if (!list.length) continue
+        const existing = await db.table(t).bulkGet(list.map((r) => r.id))
+        const fresh = list.filter((_, i) => !existing[i])
+        if (fresh.length) await db.table(t).bulkAdd(fresh)
+        added += fresh.length
+      }
     })
   }
   localStorage.setItem(CLOUD_MIGRATED, '1')
+  return added
 }
 
 /**
