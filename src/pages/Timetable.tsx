@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type PlanEvent, type TimetableBlock } from '../db'
 import { weekdayShort, WEEK_ORDER, fmt, friendlyDate, fromKey, nowHHmm, shiftKey, shortTime } from '../lib/date'
 import { type AgendaItem, useAgenda, useNow, toggleAgendaDone } from '../lib/hooks'
-import { Card, IconButton, PageHeader, SectionTitle, Segmented } from '../components/ui'
+import { Button, Card, IconButton, PageHeader, SectionTitle, Segmented } from '../components/ui'
 import { PlusIcon } from '../components/icons'
 import { AgendaList } from '../components/AgendaList'
 import { MonthCalendar } from '../components/MonthCalendar'
@@ -27,7 +27,7 @@ export default function Timetable() {
         title={t('시간표', 'Schedule')}
         right={
           <IconButton
-            label={mode === 'week' ? t('반복 시간표 추가', 'Add weekly item') : t('일정 추가', 'Add event')}
+            label={mode === 'week' ? t('반복 일정 만들기', 'New repeating item') : t('일정 추가', 'Add event')}
             className="bg-accent text-bg"
             onClick={() => (mode === 'week' ? setBlockEdit({ weekday }) : setEventEdit({ date: selected }))}
           >
@@ -41,7 +41,7 @@ export default function Timetable() {
           onChange={setMode}
           options={[
             { value: 'day', label: t('날짜별', 'By date') },
-            { value: 'week', label: t('매주 반복', 'Weekly') },
+            { value: 'week', label: t('반복', 'Repeating') },
           ]}
         />
       </div>
@@ -49,7 +49,7 @@ export default function Timetable() {
         {mode === 'day' ? (
           <DayView today={today} selected={selected} onSelect={setSelected} onBlock={setBlockEdit} onEvent={setEventEdit} />
         ) : (
-          <WeeklyView weekday={weekday} onWeekday={setWeekday} onBlock={setBlockEdit} />
+          <RepeatView weekday={weekday} onWeekday={setWeekday} onBlock={setBlockEdit} />
         )}
       </div>
       {blockEdit && <BlockSheet initial={blockEdit} onClose={() => setBlockEdit(null)} />}
@@ -112,17 +112,21 @@ function DayView({
   )
 }
 
-/** 요일을 고르면 그 요일에 매주 반복되는 시간표를 보여준다 */
-function WeeklyView({ weekday, onWeekday, onBlock }: { weekday: number; onWeekday: (d: number) => void; onBlock: (b: TimetableBlock) => void }) {
+/** 반복 일정: 요일을 고르면 그 요일에 매주 반복되는 일정, 아래에는 매달 반복되는 일정 */
+function RepeatView({ weekday, onWeekday, onBlock }: { weekday: number; onWeekday: (d: number) => void; onBlock: (b: Partial<TimetableBlock>) => void }) {
   const blocks = useLiveQuery(() => db.timetable.toArray(), [])
   const has = new Set(blocks?.map((b) => b.weekday))
   const items: AgendaItem[] = (blocks ?? [])
     .filter((b) => b.weekday === weekday)
     .sort((a, b) => a.start.localeCompare(b.start))
     .map((b) => ({ kind: 'block', key: `b${b.id}`, title: b.title, start: b.start, end: b.end, color: b.color, block: b }))
+  const monthly = (blocks ?? []).filter((b) => b.weekday === -1).sort((a, b) => (a.monthDay ?? 0) - (b.monthDay ?? 0) || a.start.localeCompare(b.start))
 
   return (
     <>
+      <Button variant="soft" className="w-full" onClick={() => onBlock({ weekday })}>
+        {t('반복 일정 만들기', 'New repeating item')}
+      </Button>
       <div className="flex gap-1.5">
         {WEEK_ORDER.map((d) => (
           <button
@@ -140,6 +144,23 @@ function WeeklyView({ weekday, onWeekday, onBlock }: { weekday: number; onWeekda
       {items.length > 0 && (
         <Card>
           <AgendaList items={items} onOpen={(it) => it.kind === 'block' && onBlock(it.block)} />
+        </Card>
+      )}
+      {monthly.length > 0 && (
+        <Card>
+          <SectionTitle>{t('매달', 'Monthly')}</SectionTitle>
+          <AnimatedList className="space-y-1">
+            {monthly.map((b) => (
+              <FlashLi key={b.id} signal={`${b.title}|${b.monthDay}|${b.start}|${b.color}`}>
+                <button type="button" onClick={() => onBlock(b)} className="w-full px-1 py-2.5 flex items-center gap-3 text-left rounded-xl active:bg-card-2">
+                  <span className={`${t('w-[52px]', 'w-[64px]')} shrink-0 text-right text-[16px] font-semibold tabular-nums`}>{t(`${b.monthDay}일`, `Day ${b.monthDay}`)}</span>
+                  <span className="w-1 self-stretch rounded-full shrink-0" style={{ background: b.color }} />
+                  <span className="min-w-0 flex-1 text-[17px] font-medium leading-snug">{b.title}</span>
+                  <span className="shrink-0 text-[16px] text-ink-2 tabular-nums">{shortTime(b.start)}</span>
+                </button>
+              </FlashLi>
+            ))}
+          </AnimatedList>
         </Card>
       )}
     </>

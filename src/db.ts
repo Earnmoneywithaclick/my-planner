@@ -44,7 +44,9 @@ export interface PlanEvent {
 
 export interface TimetableBlock {
   id: string
-  weekday: number // 0=일 … 6=토
+  weekday: number // 0=일 … 6=토, 매달 반복이면 -1
+  monthDay?: number // 매달 반복하는 날짜 (1~31). 그 달에 없는 날이면 말일에 나온다
+  calendar?: boolean // 매달 반복을 시간표 달력에 점으로 표시할지
   seriesId?: string // 함께 만든 반복 일정(여러 요일)을 묶는 id — 한 번에 고치고 지운다
   start: string
   end?: string // 없으면 시작 시간만 표시

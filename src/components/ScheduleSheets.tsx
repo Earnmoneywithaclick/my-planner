@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { COLORS, db, newId, type PlanEvent, type TimetableBlock } from '../db'
 import { TIME_SLOTS, weekdayShort, WEEK_ORDER, timeLabel, shiftKey, todayKey } from '../lib/date'
-import { Button, Select, Sheet, TextArea, TextInput } from './ui'
+import { Button, Segmented, Select, Sheet, TextArea, TextInput } from './ui'
 import { CategoryPicker } from './Categories'
 import { DateRangePicker } from './DateRangePicker'
 import { t } from '../lib/i18n'
@@ -57,8 +57,28 @@ function WeekdayPicker({ days, onToggle }: { days: number[]; onToggle: (d: numbe
   )
 }
 
-/** 했는지 체크하는 일정으로 만들기 — 켜면 일정 목록 오른쪽에 체크 동그라미가 생긴다 */
-function CheckToggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
+/** 매달 반복할 날짜 (여러 개 고를 수 있다) */
+function MonthDayPicker({ days, onToggle }: { days: number[]; onToggle: (d: number) => void }) {
+  return (
+    <div className="grid grid-cols-7 gap-1.5">
+      {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+        <button
+          key={d}
+          type="button"
+          onClick={() => onToggle(d)}
+          aria-pressed={days.includes(d)}
+          aria-label={t(`${d}일`, `Day ${d}`)}
+          className={`h-11 rounded-xl text-[16px] font-semibold tabular-nums ${days.includes(d) ? 'bg-accent text-bg' : 'bg-card-2 text-ink-2'}`}
+        >
+          {d}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/** 켜고 끄는 줄 (했는지 체크, 달력에 표시 등) */
+function Switch({ label, on, onChange }: { label: string; on: boolean; onChange: (v: boolean) => void }) {
   return (
     <button
       type="button"
@@ -67,13 +87,16 @@ function CheckToggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => 
       onClick={() => onChange(!on)}
       className="w-full h-12 rounded-xl bg-card-2 px-3.5 flex items-center justify-between text-[16px] font-medium text-ink"
     >
-      {t('했는지 체크', 'Check when done')}
+      {label}
       <span className={`w-12 h-7 rounded-full p-0.5 transition-colors ${on ? 'bg-accent' : 'bg-ink-3/35'}`}>
         <span className={`block size-6 rounded-full bg-white shadow transition-transform ${on ? 'translate-x-5' : ''}`} />
       </span>
     </button>
   )
 }
+
+/** 했는지 체크하는 일정으로 만들기 — 켜면 일정 목록 오른쪽에 체크 동그라미가 생긴다 */
+const CheckToggle = ({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) => <Switch label={t('했는지 체크', 'Check when done')} on={on} onChange={onChange} />
 
 function Footer({ isNew, valid, onSave, onRemove }: { isNew: boolean; valid: boolean; onSave: () => void; onRemove: () => void }) {
   return (
@@ -96,9 +119,16 @@ function sameSeries(a: TimetableBlock, b: TimetableBlock) {
   return a.title === b.title && a.start === b.start && (a.end ?? '') === (b.end ?? '') && a.color === b.color && (a.place ?? '') === (b.place ?? '')
 }
 
-/** 요일마다 반복되는 시간표. 고치거나 지우면 같은 반복 일정의 모든 요일에 한 번에 적용된다. */
+type Repeat = 'week' | 'month'
+/** 반복 일정 한 칸의 자리: 매주면 요일, 매달이면 날짜 */
+const slotKey = (x: Pick<TimetableBlock, 'weekday' | 'monthDay'>) => (x.weekday === -1 ? `m${x.monthDay}` : `w${x.weekday}`)
+
+/**
+ * 반복 일정 만들기 — 매주(요일 여러 개) 또는 매달(날짜 여러 개).
+ * 요일·날짜마다 한 칸씩 저장하고 seriesId 로 묶는다. 고치거나 지우면 같은 반복 일정 전체에 한 번에 적용된다.
+ */
 export function BlockSheet({ initial, onClose }: { initial: Partial<TimetableBlock>; onClose: () => void }) {
-  const [b, setB] = useState<Partial<TimetableBlock>>({ color: COLORS[4], start: '09:00', ...initial })
+  const [b, setB] = useState<Partial<TimetableBlock>>({ color: COLORS[4], start: '09:00', ...initial, calendar: initial.id == null || !!initial.calendar })
   const isNew = b.id == null
   const siblings = useLiveQuery(async () => {
     if (initial.id == null) return []
@@ -106,53 +136,83 @@ export function BlockSheet({ initial, onClose }: { initial: Partial<TimetableBlo
     const me = all.find((x) => x.id === initial.id)
     return me ? all.filter((x) => sameSeries(x, me)) : []
   }, [initial.id])
-  // 사용자가 요일을 건드리기 전까지는 같은 반복 일정의 요일들을 그대로 보여준다
-  const [pickedDays, setPickedDays] = useState<number[] | null>(isNew ? [initial.weekday ?? 1] : null)
-  const days = pickedDays ?? [...new Set(siblings?.map((x) => x.weekday) ?? (initial.weekday != null ? [initial.weekday] : []))]
+  const [pickedRepeat, setRepeat] = useState<Repeat | null>(isNew ? (initial.weekday === -1 ? 'month' : 'week') : null)
+  const repeat: Repeat = pickedRepeat ?? (initial.weekday === -1 ? 'month' : 'week')
+  // 사용자가 요일·날짜를 건드리기 전까지는 같은 반복 일정의 요일·날짜를 그대로 보여준다
+  const [pickedDays, setPickedDays] = useState<number[] | null>(isNew && initial.weekday !== -1 ? [initial.weekday ?? 1] : null)
+  const [pickedMonthDays, setPickedMonthDays] = useState<number[] | null>(isNew && initial.weekday === -1 ? [initial.monthDay ?? new Date().getDate()] : null)
+  const series = siblings ?? (initial.weekday != null ? [initial as TimetableBlock] : [])
+  const days = pickedDays ?? [...new Set(series.filter((x) => x.weekday !== -1).map((x) => x.weekday))]
+  const monthDays = pickedMonthDays ?? [...new Set(series.filter((x) => x.weekday === -1 && x.monthDay != null).map((x) => x.monthDay!))]
+  const slots: Pick<TimetableBlock, 'weekday' | 'monthDay'>[] = repeat === 'week' ? days.map((weekday) => ({ weekday })) : monthDays.map((monthDay) => ({ weekday: -1, monthDay }))
   const set = (patch: Partial<TimetableBlock>) => setB((p) => ({ ...p, ...patch }))
-  const valid = !!b.title?.trim() && !!b.start && days.length > 0 && (isNew || siblings !== undefined)
+  const valid = !!b.title?.trim() && !!b.start && slots.length > 0 && (isNew || siblings !== undefined)
 
   async function save() {
     if (!valid) return
     const seriesId = siblings?.find((x) => x.seriesId)?.seriesId ?? newId()
-    const base = { title: b.title!.trim(), place: b.place?.trim() || undefined, start: b.start!, end: b.end || undefined, color: b.color!, check: b.check || undefined, seriesId }
+    const base = {
+      title: b.title!.trim(),
+      place: b.place?.trim() || undefined,
+      start: b.start!,
+      end: b.end || undefined,
+      color: b.color!,
+      check: b.check || undefined,
+      calendar: (repeat === 'month' && b.calendar) || undefined,
+      seriesId,
+    }
     await db.transaction('rw', db.timetable, async () => {
-      // 요일마다 하나씩만 남기고 고친다. 빠진 요일은 지우고, 새로 고른 요일은 추가한다.
-      const keep = new Map<number, TimetableBlock>()
+      // 요일·날짜마다 하나씩만 남기고 고친다. 빠진 칸은 지우고, 새로 고른 칸은 추가한다 (매주 ↔ 매달로 바꾸면 전부 새로)
+      const wanted = new Set(slots.map(slotKey))
+      const keep = new Map<string, TimetableBlock>()
       for (const s of siblings ?? []) {
-        if (days.includes(s.weekday) && !keep.has(s.weekday)) keep.set(s.weekday, s)
+        const k = slotKey(s)
+        if (wanted.has(k) && !keep.has(k)) keep.set(k, s)
         else await db.timetable.delete(s.id)
       }
-      for (const weekday of days) {
-        const s = keep.get(weekday)
-        if (s) await db.timetable.update(s.id, { ...base, weekday })
-        else await db.timetable.add({ ...base, weekday, id: newId() })
+      for (const slot of slots) {
+        const s = keep.get(slotKey(slot))
+        const row = { ...base, weekday: slot.weekday, monthDay: slot.monthDay }
+        if (s) await db.timetable.update(s.id, row)
+        else await db.timetable.add({ ...row, id: newId() })
       }
     })
     onClose()
   }
 
   async function remove() {
-    // 묻지 않고 같은 반복 일정의 모든 요일을 지운다
+    // 묻지 않고 같은 반복 일정의 모든 요일·날짜를 지운다
     if (!siblings?.length) return
     await db.timetable.bulkDelete(siblings.map((x) => x.id))
     onClose()
   }
 
   // 연달아 빠르게 눌러도 앞의 선택이 사라지지 않도록 직전 값을 기준으로 바꾼다
-  const toggleDay = (d: number) =>
-    setPickedDays((p) => {
-      const cur = p ?? days
-      return cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d]
-    })
+  const toggle = (cur: number[], d: number) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d])
+  const toggleDay = (d: number) => setPickedDays((p) => toggle(p ?? days, d))
+  const toggleMonthDay = (d: number) => setPickedMonthDays((p) => toggle(p ?? monthDays, d))
 
   return (
-    <Sheet open title={isNew ? t('반복 일정 추가', 'New weekly item') : t('반복 일정 수정', 'Edit weekly item')} onClose={onClose} footer={<Footer isNew={isNew} valid={valid} onSave={save} onRemove={remove} />}>
+    <Sheet open title={isNew ? t('반복 일정 만들기', 'New repeating item') : t('반복 일정 수정', 'Edit repeating item')} onClose={onClose} footer={<Footer isNew={isNew} valid={valid} onSave={save} onRemove={remove} />}>
       <TextInput autoFocus={isNew} placeholder={t('무엇을 하나요?', 'What is it?')} value={b.title ?? ''} onChange={(e) => set({ title: e.target.value })} />
-      <WeekdayPicker days={days} onToggle={toggleDay} />
+      <Segmented
+        value={repeat}
+        onChange={(r) => {
+          setRepeat(r)
+          // 처음 바꿀 때 비어 있으면 하나 골라 둔다
+          if (r === 'week' && !days.length) setPickedDays([new Date().getDay()])
+          if (r === 'month' && !monthDays.length) setPickedMonthDays([new Date().getDate()])
+        }}
+        options={[
+          { value: 'week', label: t('매주', 'Weekly') },
+          { value: 'month', label: t('매달', 'Monthly') },
+        ]}
+      />
+      {repeat === 'week' ? <WeekdayPicker days={days} onToggle={toggleDay} /> : <MonthDayPicker days={monthDays} onToggle={toggleMonthDay} />}
       <TimeRange start={b.start} end={b.end} onChange={set} />
       <TextInput placeholder={t('장소', 'Place')} value={b.place ?? ''} onChange={(e) => set({ place: e.target.value })} />
       <CheckToggle on={!!b.check} onChange={(check) => set({ check })} />
+      {repeat === 'month' && <Switch label={t('달력에 표시', 'Show on calendar')} on={!!b.calendar} onChange={(calendar) => set({ calendar })} />}
       <CategoryPicker value={b.color!} onChange={(color) => set({ color })} />
     </Sheet>
   )

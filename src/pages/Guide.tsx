@@ -114,7 +114,7 @@ function GuideKo() {
               <b>봉사</b>:<b>+15분 · +30분 · +1시간</b>으로 오늘 시간을 더하고, 잘못 누르면 <b>−15분</b>. 카드를 누르면 달별 총 시간과 날짜별 기록(월말 결산)이 나와요.
             </>,
             <>
-              <b>오늘 일정</b>: 오늘 일정과 반복 일정이 시간순으로 나와요. + 버튼으로 바로 추가할 때는 달력 없이 오늘 · 내일 · 모레 중에서 골라요. 더 먼 날이나 며칠짜리 일정은 시간표 탭에서 추가해요.
+              <b>오늘 일정</b>: 오늘 일정과 반복 일정(매주·매달)이 시간순으로 나와요. + 버튼으로 바로 추가할 때는 달력 없이 오늘 · 내일 · 모레 중에서 골라요. 더 먼 날이나 며칠짜리 일정은 시간표 탭에서 추가해요.
             </>,
             <>
               <b>했는지 체크</b>: 일정이나 반복 일정을 만들 때 <b>했는지 체크</b>를 켜 두면 목록 오른쪽에 동그라미가 생겨요. 하고 나서 누르면 체크되고 이름에 줄이 그어져요. 날마다 따로 체크돼요.
@@ -134,7 +134,7 @@ function GuideKo() {
             '좌우로 밀거나 ‹ › 로 달을 넘겨요.',
             '일정 추가 창의 작은 달력에서 마지막 날을 누르면 며칠짜리 일정이 돼요.',
             <>
-              <b>매주 반복</b> 탭: 요일마다 반복되는 일정. 어느 요일에서 열어도 한 번에 고치고 지워져요.
+              <b>반복</b> 탭 → <b>반복 일정 만들기</b>: <b>매주</b>를 고르면 요일(여러 개)마다, <b>매달</b>을 고르면 날짜(여러 개, 예: 1일·15일)마다 반복돼요. 31일처럼 그 달에 없는 날은 말일에 나와요. 매달 일정은 <b>달력에 표시</b>를 켜 두면 달력의 그 날짜에 색 점으로 보여요(처음엔 켜져 있어요). 요일을 누르면 그 요일의 매주 일정이, 아래 <b>매달</b>에는 매달 일정이 보여요. 어느 칸에서 열어도 한 번에 고치고 지워져요.
             </>,
           ]}
         />
@@ -262,10 +262,10 @@ function GuideEn() {
               <b>Ministry</b>: add time with <b>+15m · +30m · +1h</b>, or <b>−15m</b> to fix a mistake. Tap the card for monthly totals and a day-by-day log.
             </>,
             <>
-              <b>Today’s schedule</b>: today’s events and weekly items in time order. The + button adds one quickly — choose Today · Tomorrow · In 2 days instead of a calendar. Add later or multi-day events in the Schedule tab.
+              <b>Today’s schedule</b>: today’s events and repeating items (weekly and monthly) in time order. The + button adds one quickly — choose Today · Tomorrow · In 2 days instead of a calendar. Add later or multi-day events in the Schedule tab.
             </>,
             <>
-              <b>Check when done</b>: turn on <b>Check when done</b> when creating an event or weekly item and a circle appears on the right of the list. Tap it when done to check it and strike through the name. Each day is checked separately.
+              <b>Check when done</b>: turn on <b>Check when done</b> when creating an event or repeating item and a circle appears on the right of the list. Tap it when done to check it and strike through the name. Each day is checked separately.
             </>,
             <>
               <b>Today’s to-dos</b>: type and tap +. Tap the circle to complete.
@@ -282,7 +282,7 @@ function GuideEn() {
             'Swipe sideways or use ‹ › to change months.',
             'In the small calendar of the event sheet, tap a last day to make a multi-day event.',
             <>
-              <b>Weekly</b> tab: items that repeat on certain weekdays. Opening one from any weekday edits or deletes them all at once.
+              <b>Repeating</b> tab → <b>New repeating item</b>: choose <b>Weekly</b> to repeat on weekdays (pick several), or <b>Monthly</b> to repeat on dates (pick several, e.g. the 1st and 15th). A date a month doesn’t have, like the 31st, shows on its last day. With <b>Show on calendar</b> on (it is by default), a monthly item appears as a colored dot on its date in the calendar. Tap a weekday to see its weekly items; monthly items are listed under <b>Monthly</b>. Opening one from anywhere edits or deletes the whole series.
             </>,
           ]}
         />

@@ -21,7 +21,8 @@ type CalItem = { key: string; title: string; color: string; start?: string }
 /**
  * 한 달 달력. 하루짜리 일정은 카테고리 색 점, 며칠 이어지는 일정은 날짜를 가로지르는 색 막대로 보여주고,
  * 아래에 색 → 카테고리 설명을 단다.
- * 매주 반복 시간표는 매번 찍히면 어지러워서 달력에는 넣지 않는다 (날짜를 고르면 아래 목록에는 나온다).
+ * 매주 반복 일정은 매번 찍히면 어지러워서 달력에는 넣지 않는다 (날짜를 고르면 아래 목록에는 나온다).
+ * 매달 반복 일정은 '달력에 표시'를 켠 것만 그 날짜에 점으로 찍는다 (그 달에 없는 날짜면 말일에).
  * 한 번 탭하면 그 날짜 선택, 같은 날짜를 빠르게 두 번 탭하면 일정 추가.
  */
 export function MonthCalendar({ today, selected, onSelect, onAdd }: { today: string; selected: string; onSelect: (k: string) => void; onAdd: (k: string) => void }) {
@@ -49,10 +50,20 @@ export function MonthCalendar({ today, selected, onSelect, onAdd }: { today: str
   const data = useLiveQuery(async () => {
     const first = days[0]
     const last = days[days.length - 1]
-    const events = await db.events.where('date').belowOrEqual(last).filter((e) => (e.endDate ?? e.date) >= first).toArray()
+    const [events, monthly] = await Promise.all([
+      db.events.where('date').belowOrEqual(last).filter((e) => (e.endDate ?? e.date) >= first).toArray(),
+      db.timetable.where('weekday').equals(-1).filter((b) => !!b.calendar).toArray(),
+    ])
     // 하루짜리 일정은 그날의 점으로
     const byDate = new Map<string, CalItem[]>()
-    for (const e of events.filter((e) => !isMultiDay(e))) byDate.set(e.date, [...(byDate.get(e.date) ?? []), { key: e.id, title: e.title, color: e.color, start: e.start }])
+    const addDot = (d: string, it: CalItem) => byDate.set(d, [...(byDate.get(d) ?? []), it])
+    for (const e of events.filter((e) => !isMultiDay(e))) addDot(e.date, { key: e.id, title: e.title, color: e.color, start: e.start })
+    // 매달 반복 일정도 그 날짜의 점으로
+    for (const d of days) {
+      const day = fromKey(d)
+      const lastDay = new Date(day.getFullYear(), day.getMonth() + 1, 0).getDate()
+      for (const b of monthly) if (Math.min(b.monthDay ?? 0, lastDay) === day.getDate()) addDot(d, { key: `${b.id}-${d}`, title: b.title, color: b.color, start: b.start })
+    }
 
     // 며칠 이어지는 일정은 한 주(달력 한 줄)마다 줄(lane)을 정해 막대로 잇는다.
     // 같은 주 안에서는 같은 일정이 늘 같은 높이에 오도록, 겹치지 않는 일정끼리 한 줄을 나눠 쓴다.
@@ -69,11 +80,14 @@ export function MonthCalendar({ today, selected, onSelect, onAdd }: { today: str
       }
       for (const d of week) lanesByDay.set(d, lanes.slice(0, MAX_LANES).map((l) => l.find((e) => e.date <= d && d <= e.endDate!) ?? null))
     }
-    return { byDate, lanesByDay, events }
+    return { byDate, lanesByDay, events, monthly }
   }, [days[0], days[days.length - 1]])
 
   const itemsOf = (d: string) => [...(data?.byDate.get(d) ?? [])].sort((a, b) => (a.start ?? '').localeCompare(b.start ?? ''))
-  const monthColors = new Set((data?.events ?? []).filter((e) => e.date <= toKey(endOfMonth(month)) && (e.endDate ?? e.date) >= toKey(month)).map((e) => e.color))
+  const monthColors = new Set([
+    ...(data?.events ?? []).filter((e) => e.date <= toKey(endOfMonth(month)) && (e.endDate ?? e.date) >= toKey(month)).map((e) => e.color),
+    ...(data?.monthly ?? []).map((b) => b.color),
+  ])
 
   function tap(d: string) {
     const now = Date.now()

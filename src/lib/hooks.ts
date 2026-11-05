@@ -30,12 +30,19 @@ export async function toggleAgendaDone(it: AgendaItem, dateKey: string) {
   else await db.events.update(row.id, { doneDates })
 }
 
-/** 그 날의 반복 시간표 + 일정을 시간순으로 합친다 */
+/** 그 날의 반복 일정(매주·매달) + 일정을 시간순으로 합친다 */
 export function useAgenda(dateKey: string): AgendaItem[] | undefined {
   return useLiveQuery(async () => {
-    const weekday = fromKey(dateKey).getDay()
+    const day = fromKey(dateKey)
+    const weekday = day.getDay()
+    const lastDay = new Date(day.getFullYear(), day.getMonth() + 1, 0).getDate()
     const [blocks, events] = await Promise.all([
-      db.timetable.where('weekday').equals(weekday).toArray(),
+      // 이 요일에 매주 반복 + 이 날짜에 매달 반복 (31일처럼 그 달에 없는 날은 말일에)
+      db.timetable
+        .where('weekday')
+        .anyOf(weekday, -1)
+        .filter((b) => b.weekday !== -1 || Math.min(b.monthDay ?? 0, lastDay) === day.getDate())
+        .toArray(),
       // 이날 시작했거나, 전에 시작해서 이날까지 이어지는 일정
       db.events.where('date').belowOrEqual(dateKey).filter((e) => (e.endDate ?? e.date) >= dateKey).toArray(),
     ])
